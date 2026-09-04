@@ -2,39 +2,39 @@
 layout: home
 hero:
   name: "Memesplora"
-  text: "将内存/显存作为高速文件系统"
-  tagline: 选择存储设备，创建自定义空间，以文件系统的方式管理内存数据
+  text: "Memory & VRAM Filesystem"
+  tagline: Use RAM and GPU VRAM as a high-speed file system with Cloudreve-style UI, S3 protocol, and WebDAV support
   image:
-    src: /logo.svg
+    src: /memesplora/logo.svg
     alt: Memesplora
   actions:
     - theme: brand
-      text: 快速开始
+      text: Get Started
       link: /guide/getting-started
     - theme: alt
-      text: 系统架构
+      text: Architecture
       link: /architecture/overview
     - theme: alt
       text: GitHub
-      link: https://github.com/memesplora/memesplora
+      link: https://github.com/Maicarons/memesplora
 
 features:
   - icon: 🚀
-    title: 极致速度
-    details: 基于内存/显存的存储，读写速度远超传统磁盘，延迟低至纳秒级
+    title: Blazing Fast
+    details: RAM/VRAM-based storage with nanosecond-level latency, orders of magnitude faster than disk
   - icon: 🎮
-    title: 多设备支持
-    details: 支持系统 RAM 和 GPU VRAM（NVIDIA CUDA），自动检测可用设备
+    title: Multi-Device Support
+    details: Supports system RAM and GPU VRAM (NVIDIA CUDA) with automatic device detection
   - icon: 📁
-    title: 文件管理
-    details: 类 Cloudreve 的文件管理界面，支持目录树、文件操作、拖拽上传
+    title: File Management
+    details: Cloudreve-inspired file manager with directory tree, drag-and-drop upload, and multi-format preview
   - icon: 🔌
-    title: 多协议支持
-    details: 原生 REST API + S3 兼容协议 + WebDAV，满足所有使用场景
-  - icon: 🔒
-    title: 安全可靠
-    details: JWT 认证、S3 签名验证、WebDAV 权限控制，数据安全有保障
+    title: Multi-Protocol
+    details: Native REST API + S3-compatible protocol + WebDAV for all use cases
+  - icon: 🌙
+    title: Dark Mode
+    details: Built-in dark/light theme toggle with persistent preference
   - icon: 📦
-    title: 单文件部署
-    details: Go 编译为单二进制，前端内嵌，一条命令即可运行
+    title: Single Binary
+    details: Go backend compiled into one executable with embedded frontend
 ---

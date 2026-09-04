@@ -1,28 +1,28 @@
-# API 参考
+# API Reference
 
-Memesplora 提供三种访问协议：
+Memesplora provides three access protocols:
 
 ## REST API
 
-完整的 HTTP API，用于文件管理、空间管理、用户认证等。
+Full HTTP API for file management, space management, user authentication, and sharing.
 
-- **端口**: 5212
+- **Port**: 5212
 - **Base URL**: `http://localhost:5212/api/v3`
-- **认证**: JWT Bearer Token
-- **文档**: [REST API 参考](/api/rest)
+- **Auth**: JWT Bearer Token
+- **Docs**: [REST API Reference](/api/rest)
 
-## S3 兼容 API
+## S3-Compatible API
 
-兼容 AWS S3 协议，可使用 rclone、AWS CLI 等工具访问。
+AWS S3-compatible protocol for use with rclone, AWS CLI, MinIO Client, and other S3 tools.
 
-- **端口**: 5213
-- **认证**: AWS Signature V4
-- **文档**: [S3 API 参考](/api/s3)
+- **Port**: 5213
+- **Auth**: AWS Signature V4
+- **Docs**: [S3 API Reference](/api/s3)
 
 ## WebDAV
 
-支持 WebDAV 协议，可映射为网络驱动器。
+WebDAV protocol for mounting as a network drive in operating system file managers.
 
-- **端口**: 5214
-- **认证**: HTTP Basic Auth
-- **文档**: [WebDAV 参考](/api/webdav)
+- **Port**: 5214
+- **Auth**: HTTP Basic Auth
+- **Docs**: [WebDAV Reference](/api/webdav)

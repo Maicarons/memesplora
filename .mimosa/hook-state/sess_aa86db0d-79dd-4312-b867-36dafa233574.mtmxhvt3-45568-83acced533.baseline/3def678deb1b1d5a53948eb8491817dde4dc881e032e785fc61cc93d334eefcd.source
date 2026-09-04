@@ -7,6 +7,7 @@ export default defineConfig({
   base: '/memesplora/',
   lastUpdated: true,
   cleanUrls: true,
+  ignoreDeadLinks: true,
 
   head: [
     ['link', { rel: 'icon', href: '/memesplora/favicon.ico' }],

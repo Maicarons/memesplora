@@ -1,11 +1,11 @@
-# Architecture Overview
+# 整体架构
 
-## System Architecture
+## 系统架构图
 
 ```
 ┌──────────────────────────────────────────────────────────────────┐
-│                   User Interface Layer                            │
-│   Web UI (React)  ·  S3 Clients (rclone, AWS CLI)  ·  WebDAV    │
+│                      用户浏览器 / 第三方客户端                       │
+│          (Chrome / rclone / WinSCP / macOS Finder / curl)         │
 └──────────────┬──────────────────────┬────────────────┬───────────┘
                │                      │                │
         ┌──────▼──────┐       ┌──────▼──────┐  ┌─────▼──────┐
@@ -15,43 +15,86 @@
                │                      │                │
         ┌──────▼──────────────────────▼────────────────▼──────┐
         │                    Gin Router                        │
-        │         Middleware: CORS → Auth → Rate Limit         │
+        │         中间件链: CORS → 认证 → 限流 → 审计         │
         └──────────┬───────────────────────────────────────────┘
                    │
         ┌──────────▼───────────────────────────────────────────┐
         │                    Service Layer                      │
-        │  Auth · File Management · Space Management · Shares  │
+        │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌────────┐  │
+        │  │ UserSvc │ │ FileSvc  │ │ SpaceSvc │ │ShareSvc│  │
+        │  └──────────┘ └──────────┘ └──────────┘ └────────┘  │
         └──────────┬───────────────────────────────────────────┘
                    │
         ┌──────────▼───────────────────────────────────────────┐
         │                 Storage Abstraction                   │
-        │         In-Memory FileSystem (Inode + Block-based)    │
+        │         FileSystem interface (In-Memory FS)           │
         │  ┌──────────┐ ┌──────────┐ ┌──────────────────────┐  │
-        │  │ RAM      │ │ VRAM    │ │ Swap/Persist         │  │
-        │  │ Driver   │ │ Driver  │ │ Layer (optional)     │  │
+        │  │ RAM 驱动 │ │VRAM 驱动 │ │ Swap 持久化层       │  │
+        │  │(MemBlock)│ │(CudaMem) │ │ (可选磁盘后备)       │  │
         │  └────┬─────┘ └────┬─────┘ └──────────────────────┘  │
         └───────┼─────────────┼─────────────────────────────────┘
                 │             │
         ┌───────▼─────────────▼─────────────────────────────────┐
         │              Device Management Layer                   │
-        │  mmap / VirtualAlloc / CUDA / NVML                     │
+        │  syscall.Mmap / VirtualAlloc / nvml / cudaMemGetInfo   │
         └───────────────────────────────────────────────────────┘
 ```
 
-## Port Map
+## 分层说明
 
-| Port | Service | Description |
-|:----:|---------|-------------|
-| 5212 | REST API + Web UI | Main port for HTTP API and frontend |
-| 5213 | S3 API | AWS S3-compatible protocol |
-| 5214 | WebDAV | WebDAV protocol |
+### 1. 设备管理层（Device Layer）
+最底层，直接与操作系统和硬件交互。负责：
+- 检测系统可用内存（RAM）
+- 检测 GPU 显存（VRAM，通过 CUDA/NVML）
+- 分配/回收内存块
+- 跨平台适配（Linux mmap、Windows VirtualAlloc）
 
-## Tech Stack
+### 2. 存储抽象层（Storage Layer）
+将设备管理的内存块组织为文件系统结构。核心接口 `FileSystem` 提供：
+- 目录树管理
+- 文件读写操作
+- 空间配额管理
+- 块分配与回收（Buddy System）
 
-| Layer | Technology |
-|-------|-----------|
-| Backend | Go 1.22+, Gin, ent, golang.org/x/net/webdav |
-| Frontend | React 18, TypeScript, Ant Design 5, Zustand, Vite |
-| Database | SQLite / PostgreSQL (metadata only) |
-| RAM | mmap (Linux/macOS) / VirtualAlloc (Windows) |
-| VRAM | CUDA + NVML (stub, ready for integration) |
+### 3. 业务逻辑层（Service Layer）
+实现具体的业务逻辑：
+- 用户认证与授权
+- 文件管理
+- 空间管理
+- 分享链接生成
+- 管理后台
+
+### 4. API 网关层
+提供三种访问协议：
+- **REST API**: 完整的 HTTP API，供 Web 前端和第三方应用使用
+- **S3 API**: 兼容 AWS S3 协议，可使用 rclone、AWS CLI 等工具
+- **WebDAV**: 兼容 WebDAV 协议，可映射为网络驱动器
+
+### 5. 用户界面层
+React 单页应用，提供：
+- 文件管理面板
+- 设备管理页面
+- 管理后台
+- 分享页面
+
+## 端口规划
+
+| 端口 | 服务 | 说明 |
+|:----:|------|------|
+| 5212 | REST API + Web 管理面板 | 主端口，提供 HTTP API 和前端页面 |
+| 5213 | S3 兼容 API | 独立端口，兼容 AWS S3 协议 |
+| 5214 | WebDAV 服务 | 独立端口，支持 WebDAV 客户端挂载 |
+
+## 技术栈
+
+| 层次 | 技术 | 说明 |
+|------|------|------|
+| 后端语言 | Go 1.22+ | 高性能、编译型、内存管理优秀 |
+| Web 框架 | Gin | 高性能 HTTP 框架 |
+| ORM | ent | 类型安全的 ORM |
+| 数据库 | SQLite / PostgreSQL | 元数据存储 |
+| WebDAV | golang.org/x/net/webdav | 官方 WebDAV 实现 |
+| 前端框架 | React 18 + TypeScript | 组件化 UI |
+| UI 组件库 | Ant Design 5.x | 企业级 UI 组件 |
+| 状态管理 | Zustand | 轻量状态管理 |
+| 构建工具 | Vite | 前端构建 |
