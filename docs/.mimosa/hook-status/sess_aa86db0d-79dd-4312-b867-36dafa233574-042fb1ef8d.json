@@ -1,10 +1,10 @@
 {
   "schemaVersion": "mimosa-hook-status/v1",
-  "recordedAt": "2026-09-04T12:29:23.508Z",
+  "recordedAt": "2026-09-04T12:37:25.079Z",
   "sessionId": "sess_aa86db0d-79dd-4312-b867-36dafa233574",
   "event": "PostToolUse",
   "toolName": "Write",
-  "file": "ko/index.md",
+  "file": "development/performance.md",
   "outcome": "clear",
   "coverage": "complete",
   "findingCount": 0,
