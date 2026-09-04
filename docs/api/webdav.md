@@ -64,4 +64,4 @@ curl -T file.txt http://localhost:5214/file.txt
 
 ## 架构详情
 
-请参阅 [WebDAV 协议架构](/memesplora/architecture/webdav) 了解详细设计。
+请参阅 [WebDAV 协议架构](/architecture/webdav) 了解详细设计。

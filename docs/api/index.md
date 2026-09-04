@@ -9,7 +9,7 @@ Memesplora 提供三种访问协议：
 - **端口**: 5212
 - **Base URL**: `http://localhost:5212/api/v3`
 - **认证**: JWT Bearer Token
-- **文档**: [REST API 参考](/memesplora/api/rest)
+- **文档**: [REST API 参考](/api/rest)
 
 ## S3 兼容 API
 
@@ -17,7 +17,7 @@ Memesplora 提供三种访问协议：
 
 - **端口**: 5213
 - **认证**: AWS Signature V4
-- **文档**: [S3 API 参考](/memesplora/api/s3)
+- **文档**: [S3 API 参考](/api/s3)
 
 ## WebDAV
 
@@ -25,4 +25,4 @@ Memesplora 提供三种访问协议：
 
 - **端口**: 5214
 - **认证**: HTTP Basic Auth
-- **文档**: [WebDAV 参考](/memesplora/api/webdav)
+- **文档**: [WebDAV 参考](/api/webdav)

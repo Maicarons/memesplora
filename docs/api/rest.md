@@ -149,4 +149,4 @@ DELETE /api/v3/share/:id
 
 ## 架构详情
 
-请参阅 [REST API 架构](/memesplora/architecture/rest-api) 了解详细设计。
+请参阅 [REST API 架构](/architecture/rest-api) 了解详细设计。
