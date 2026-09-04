@@ -33,8 +33,6 @@ func NewRouter(h *handler.Handler, authMW *middleware.AuthMiddleware, cfg *confi
 		{
 			userGroup.GET("/session", h.GetSession)
 		}
-		// Public user routes (no auth)
-		v3.POST("/user/register", h.Register)
 
 		// Device routes
 		deviceGroup := v3.Group("/device")
@@ -64,13 +62,12 @@ func NewRouter(h *handler.Handler, authMW *middleware.AuthMiddleware, cfg *confi
 			fileGroup.GET("/files", h.ListFiles)
 			fileGroup.POST("/files", h.UploadFile)
 			fileGroup.GET("/files/:fileId", h.DownloadFile)
-			fileGroup.PUT("/files/:fileId", h.UpdateFile)
 			fileGroup.DELETE("/files/:fileId", h.DeleteFile)
+			fileGroup.PUT("/files/:fileId", h.UpdateFile)
 			fileGroup.POST("/files/:fileId/rename", h.RenameFile)
 			fileGroup.POST("/files/:fileId/move", h.MoveFile)
 			fileGroup.POST("/files/:fileId/copy", h.CopyFile)
 			fileGroup.POST("/dirs", h.CreateDir)
-			fileGroup.POST("/object/put", h.DirectUpload)
 		}
 
 		// Share routes

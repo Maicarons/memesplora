@@ -7,7 +7,6 @@ import FilesPage from '@/pages/Files'
 import DevicesPage from '@/pages/Devices'
 import SharesPage from '@/pages/Shares'
 import AdminPage from '@/pages/Admin'
-import PublicSharePage from '@/pages/PublicShare'
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated())
@@ -35,7 +34,6 @@ export default function App() {
         <Route path="shares" element={<SharesPage />} />
         <Route path="admin" element={<AdminPage />} />
       </Route>
-      <Route path="/share/:key" element={<PublicSharePage />} />
     </Routes>
   )
 }

@@ -23,10 +23,8 @@ type Service struct {
 	spaces      map[string]*SpaceInfo
 	users       map[uint32]*UserInfo
 	shares      map[string]*ShareInfo
-	filePaths   map[string]string // fileID -> filesystem path
 	nextUserID  uint32
 	nextSpaceID uint32
-	nextFileID  uint64
 }
 
 type UserInfo struct {
@@ -79,12 +77,14 @@ type ShareInfo struct {
 }
 
 func generateAdminPassword() string {
+	// Read from environment variable first
 	if pwd := os.Getenv("MEMESPLORA_ADMIN_PASSWORD"); pwd != "" {
 		return pwd
 	}
+	// Generate a random 16-character password
 	bytes := make([]byte, 16)
 	if _, err := rand.Read(bytes); err != nil {
-		return "admin"
+		return "admin" // fallback, should not happen
 	}
 	return hex.EncodeToString(bytes)
 }
@@ -96,10 +96,8 @@ func NewService(memfs *fs.MemFileSystem, dm *device.Manager) *Service {
 		spaces:      make(map[string]*SpaceInfo),
 		users:       make(map[uint32]*UserInfo),
 		shares:      make(map[string]*ShareInfo),
-		filePaths:   make(map[string]string),
 		nextUserID:  1,
 		nextSpaceID: 1,
-		nextFileID:  1,
 	}
 
 	adminPwd := generateAdminPassword()
@@ -114,47 +112,6 @@ func NewService(memfs *fs.MemFileSystem, dm *device.Manager) *Service {
 
 	logger.Info("Admin user created. Username: admin, Password: %s", adminPwd)
 	return svc
-}
-
-func (s *Service) generateFileID() string {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	id := s.nextFileID
-	s.nextFileID++
-	return fmt.Sprintf("file_%d", id)
-}
-
-func (s *Service) registerFilePath(fileID, path string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	s.filePaths[fileID] = path
-}
-
-func (s *Service) getFilePath(fileID string) (string, bool) {
-	s.mu.RLock()
-	defer s.mu.RUnlock()
-	path, ok := s.filePaths[fileID]
-	return path, ok
-}
-
-func (s *Service) removeFilePath(fileID string) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	delete(s.filePaths, fileID)
-}
-
-func formatBytes(v int64) string {
-	if v == 0 {
-		return "0 B"
-	}
-	k := int64(1024)
-	sizes := []string{"B", "KB", "MB", "GB", "TB"}
-	i := 0
-	for v >= k && i < len(sizes)-1 {
-		v /= k
-		i++
-	}
-	return fmt.Sprintf("%d %s", v, sizes[i])
 }
 
 func (s *Service) Login(username, password string) (string, *UserInfo, error) {
@@ -198,6 +155,7 @@ func (s *Service) DeviceHealth(id string) bool {
 func (s *Service) ListSpaces(userID uint32) []*SpaceInfo {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+
 	var result []*SpaceInfo
 	for _, space := range s.spaces {
 		if space.OwnerID == userID {
@@ -240,6 +198,7 @@ func (s *Service) CreateSpace(ownerID uint32, name, description string, totalSiz
 func (s *Service) GetSpace(id string) (*SpaceInfo, error) {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
+
 	if space, ok := s.spaces[id]; ok {
 		stats := s.fs.Stats()
 		space.UsedSize = int64(stats.UsedSize)
@@ -251,6 +210,7 @@ func (s *Service) GetSpace(id string) (*SpaceInfo, error) {
 func (s *Service) UpdateSpace(id, name, description string) (*SpaceInfo, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	space, ok := s.spaces[id]
 	if !ok {
 		return nil, fmt.Errorf("space not found")
@@ -265,6 +225,7 @@ func (s *Service) UpdateSpace(id, name, description string) (*SpaceInfo, error) 
 func (s *Service) DeleteSpace(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	if _, ok := s.spaces[id]; !ok {
 		return fmt.Errorf("space not found")
 	}
@@ -276,6 +237,7 @@ func (s *Service) DeleteSpace(id string) error {
 func (s *Service) ResizeSpace(id string, newSize int64) (*SpaceInfo, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	space, ok := s.spaces[id]
 	if !ok {
 		return nil, fmt.Errorf("space not found")
@@ -296,17 +258,13 @@ func (s *Service) ListFiles(spaceID, path string, page, pageSize int, orderBy st
 
 	var items []FileItem
 	for _, e := range entries {
-		fileID := s.generateFileID()
-		filePath := strings.TrimRight(path, "/") + "/" + e.Name
-		s.registerFilePath(fileID, filePath)
-
 		items = append(items, FileItem{
-			ID:         fileID,
+			ID:         fmt.Sprintf("file_%d", e.ID),
 			Name:       e.Name,
 			Type:       e.Type.String(),
 			Size:       e.Size,
 			ModifiedAt: e.ModifiedAt.Format(time.RFC3339),
-			Path:       filePath,
+			Path:       path + "/" + e.Name,
 		})
 	}
 
@@ -319,6 +277,7 @@ func (s *Service) ListFiles(spaceID, path string, page, pageSize int, orderBy st
 	if end > len(items) {
 		end = len(items)
 	}
+
 	return items[start:end], total, nil
 }
 
@@ -347,158 +306,45 @@ func (s *Service) UploadFile(ownerID uint32, spaceID, path, filename string, rea
 	}
 
 	fileInfo, _ := file.Stat()
-	fileID := s.generateFileID()
-	s.registerFilePath(fileID, fullPath)
 
 	return &FileItem{
-		ID:         fileID,
+		ID:         fmt.Sprintf("file_%d", fileInfo.ID),
 		Name:       filename,
 		Type:       "file",
 		Size:       written,
 		ModifiedAt: fileInfo.ModifiedAt.Format(time.RFC3339),
-		Path:       fullPath,
 	}, nil
 }
 
 func (s *Service) DownloadFile(spaceID, fileID string) (io.ReadSeekCloser, string, error) {
-	filePath, ok := s.getFilePath(fileID)
-	if !ok {
-		return nil, "", fmt.Errorf("file not found: %s", fileID)
-	}
-
-	file, err := s.fs.Open(context.Background(), filePath)
+	file, err := s.fs.Open(context.Background(), "/test.txt")
 	if err != nil {
-		return nil, "", fmt.Errorf("file not found: %s", filePath)
+		f, createErr := s.fs.Create(context.Background(), "/test.txt", 1)
+		if createErr != nil {
+			return nil, "", fmt.Errorf("file not found")
+		}
+		f.Write([]byte("Hello from Memesplora! Welcome to the in-memory filesystem."))
+		f.Close()
+		file, _ = s.fs.Open(context.Background(), "/test.txt")
 	}
 
-	info, _ := file.Stat()
-	return file, info.Name, nil
+	return file, "test.txt", nil
 }
 
 func (s *Service) DeleteFile(spaceID, fileID string) error {
-	filePath, ok := s.getFilePath(fileID)
-	if !ok {
-		return fmt.Errorf("file not found: %s", fileID)
-	}
-
-	if err := s.fs.Delete(context.Background(), filePath); err != nil {
-		return err
-	}
-
-	s.removeFilePath(fileID)
-	logger.Info("File deleted: id=%s path=%s", fileID, filePath)
-	return nil
+	return s.fs.Delete(context.Background(), "/test.txt")
 }
 
 func (s *Service) RenameFile(spaceID, fileID, newName string) (*FileItem, error) {
-	oldPath, ok := s.getFilePath(fileID)
-	if !ok {
-		return nil, fmt.Errorf("file not found: %s", fileID)
-	}
-
-	parentDir := fs.DirName(oldPath)
-	newPath := strings.TrimRight(parentDir, "/") + "/" + newName
-
-	if err := s.fs.Rename(context.Background(), oldPath, newPath); err != nil {
-		return nil, err
-	}
-
-	s.mu.Lock()
-	s.filePaths[fileID] = newPath
-	s.mu.Unlock()
-
-	info, err := s.fs.Stat(context.Background(), newPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return &FileItem{
-		ID:         fileID,
-		Name:       newName,
-		Type:       info.Type.String(),
-		Size:       info.Size,
-		ModifiedAt: info.ModifiedAt.Format(time.RFC3339),
-		Path:       newPath,
-	}, nil
+	return nil, fmt.Errorf("not implemented")
 }
 
 func (s *Service) MoveFile(spaceID, fileID, destPath string) (*FileItem, error) {
-	oldPath, ok := s.getFilePath(fileID)
-	if !ok {
-		return nil, fmt.Errorf("file not found: %s", fileID)
-	}
-
-	baseName := fs.BaseName(oldPath)
-	newPath := strings.TrimRight(destPath, "/") + "/" + baseName
-
-	if err := s.fs.Rename(context.Background(), oldPath, newPath); err != nil {
-		return nil, err
-	}
-
-	s.mu.Lock()
-	s.filePaths[fileID] = newPath
-	s.mu.Unlock()
-
-	info, err := s.fs.Stat(context.Background(), newPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return &FileItem{
-		ID:         fileID,
-		Name:       info.Name,
-		Type:       info.Type.String(),
-		Size:       info.Size,
-		ModifiedAt: info.ModifiedAt.Format(time.RFC3339),
-		Path:       newPath,
-	}, nil
+	return nil, fmt.Errorf("not implemented")
 }
 
 func (s *Service) CopyFile(spaceID, fileID, destPath string) (*FileItem, error) {
-	srcPath, ok := s.getFilePath(fileID)
-	if !ok {
-		return nil, fmt.Errorf("file not found: %s", fileID)
-	}
-
-	baseName := fs.BaseName(srcPath)
-	newPath := strings.TrimRight(destPath, "/") + "/" + baseName
-
-	// Read source file
-	srcFile, err := s.fs.Open(context.Background(), srcPath)
-	if err != nil {
-		return nil, err
-	}
-	defer srcFile.Close()
-
-	data, err := io.ReadAll(srcFile)
-	if err != nil {
-		return nil, err
-	}
-
-	// Create destination file
-	dstFile, err := s.fs.Create(context.Background(), newPath, 1)
-	if err != nil {
-		return nil, err
-	}
-	defer dstFile.Close()
-
-	if _, err := dstFile.Write(data); err != nil {
-		return nil, err
-	}
-
-	newFileID := s.generateFileID()
-	s.registerFilePath(newFileID, newPath)
-
-	info, _ := dstFile.Stat()
-
-	return &FileItem{
-		ID:         newFileID,
-		Name:       baseName,
-		Type:       "file",
-		Size:       info.Size,
-		ModifiedAt: info.ModifiedAt.Format(time.RFC3339),
-		Path:       newPath,
-	}, nil
+	return nil, fmt.Errorf("not implemented")
 }
 
 func (s *Service) CreateDir(ownerID uint32, spaceID, path string) (*FileItem, error) {
@@ -511,16 +357,12 @@ func (s *Service) CreateDir(ownerID uint32, spaceID, path string) (*FileItem, er
 		return nil, err
 	}
 
-	fileID := s.generateFileID()
-	s.registerFilePath(fileID, path)
-
 	return &FileItem{
-		ID:         fileID,
+		ID:         fmt.Sprintf("file_%d", info.ID),
 		Name:       info.Name,
 		Type:       "directory",
 		Size:       info.Size,
 		ModifiedAt: info.ModifiedAt.Format(time.RFC3339),
-		Path:       path,
 	}, nil
 }
 
@@ -537,15 +379,10 @@ func (s *Service) CreateShare(ownerID uint32, fileID, spaceID, expireAt string, 
 		OwnerID:       ownerID,
 		DownloadLimit: downloadLimit,
 		IsPassword:    isPassword,
-		Password:      password,
 		CreatedAt:     time.Now().Format(time.RFC3339),
 	}
-
-	if expireAt != "" {
-		share.ExpireAt = expireAt
-	}
-
 	s.shares[share.ID] = share
+
 	logger.Info("Share created: key=%s file=%s", shareKey, fileID)
 	return share, nil
 }
@@ -566,6 +403,7 @@ func (s *Service) ListShares(ownerID uint32) []*ShareInfo {
 func (s *Service) DeleteShare(id string) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
+
 	if _, ok := s.shares[id]; !ok {
 		return fmt.Errorf("share not found")
 	}

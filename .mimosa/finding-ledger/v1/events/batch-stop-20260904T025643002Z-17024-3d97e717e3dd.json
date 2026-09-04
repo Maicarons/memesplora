@@ -1,0 +1,284 @@
+{
+  "schemaVersion": "mimosa-finding-ledger-batch/v1",
+  "batchId": "stop-20260904T025643002Z-17024-3d97e717e3dd",
+  "runId": "20260904T025643002Z-17024-3d97e717e3dd",
+  "runStatus": "inconclusive",
+  "coverage": {
+    "status": "partial",
+    "reasons": [
+      {
+        "code": "candidate_limit_exceeded",
+        "stage": "candidate-select",
+        "target": "backend/internal/s3/error.go",
+        "detail": "20 changed reviewable file(s) were not scanned because the limit is 20",
+        "affectsCompletion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "candidate-select",
+        "target": "backend/internal/s3/error.go",
+        "detail": "candidate_limit_exceeded: 20 changed reviewable file(s) were not scanned because the limit is 20",
+        "affectsCompletion": true
+      }
+    ]
+  },
+  "source": {
+    "component": "zcode-hook",
+    "operationId": "Stop"
+  },
+  "revision": "14a5384044a48afbc67057cf65803d50e8b31efc",
+  "diffHash": "e793b9e52097108789ca1e8b6f90acc0897ead540a4f7ad8807b5f8c16897d8f",
+  "rulesVersion": "unavailable",
+  "sessionHash": "042fb1ef8dd2477e47c3dfa3e8431c902ac19525e11421570067e0326e02a1ac",
+  "reportRef": ".mimosa/reports/task-review-sess_aa86db0d-79dd-4312-b867-36dafa233574-20260904T025643002Z-17024-3d97e717e3dd.json",
+  "events": [
+    {
+      "eventId": "hook-d5f90a95d6ac87367ef53ad17816b678",
+      "findingId": "mimosa-f43322c75c3bcaee0e708546",
+      "type": "finding_observed",
+      "at": "2026-09-04T02:40:15.490Z",
+      "identity": {
+        "projectRelativeFile": "backend/cmd/server/main.go",
+        "ruleId": "security",
+        "codeEvidenceHash": "65e3efd3a6846032b0e1ae86feb9d72bbf9a9a327f7048b98fe7885f120b14d9",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 78,
+      "endLine": 78,
+      "reasonCode": "advisory",
+      "reportedToAgent": true,
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "evidenceHash": "65e3efd3a6846032b0e1ae86feb9d72bbf9a9a327f7048b98fe7885f120b14d9"
+      },
+      "sequence": 0
+    },
+    {
+      "eventId": "hook-fe4264a0f1121b48c9992e1a293933c8",
+      "findingId": "mimosa-5a0e0ed1879daab888fac439",
+      "type": "finding_observed",
+      "at": "2026-09-04T02:40:15.490Z",
+      "identity": {
+        "projectRelativeFile": "backend/cmd/server/main.go",
+        "ruleId": "security",
+        "codeEvidenceHash": "dea993d0a742f80a1e6b79f4da1e3e86568cf9f9faabfa7c4488413e49e91fce",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 84,
+      "endLine": 84,
+      "reasonCode": "advisory",
+      "reportedToAgent": true,
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "evidenceHash": "dea993d0a742f80a1e6b79f4da1e3e86568cf9f9faabfa7c4488413e49e91fce"
+      },
+      "sequence": 1
+    },
+    {
+      "eventId": "hook-bc484adc37766e5a9b3a8942007df008",
+      "findingId": "mimosa-0b5e2ecdaf1389852aab67ad",
+      "type": "finding_observed",
+      "at": "2026-09-04T02:41:15.752Z",
+      "identity": {
+        "projectRelativeFile": "backend/internal/api/middleware/auth.go",
+        "ruleId": "security",
+        "codeEvidenceHash": "fbd34950d5edc800e7b08ca1f7a411932c54e73d3d79bb84b867aedc6d43eac8",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 77,
+      "endLine": 77,
+      "reasonCode": "advisory",
+      "reportedToAgent": true,
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "evidenceHash": "fbd34950d5edc800e7b08ca1f7a411932c54e73d3d79bb84b867aedc6d43eac8"
+      },
+      "sequence": 2
+    },
+    {
+      "eventId": "hook-d9c2367d0fe8f1da96d2c8e7b582505f",
+      "findingId": "mimosa-0b5e2ecdaf1389852aab67ad",
+      "type": "finding_observed",
+      "at": "2026-09-04T02:41:25.761Z",
+      "identity": {
+        "projectRelativeFile": "backend/internal/api/middleware/auth.go",
+        "ruleId": "security",
+        "codeEvidenceHash": "fbd34950d5edc800e7b08ca1f7a411932c54e73d3d79bb84b867aedc6d43eac8",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 15,
+      "endLine": 15,
+      "reasonCode": "advisory",
+      "reportedToAgent": true,
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "evidenceHash": "fbd34950d5edc800e7b08ca1f7a411932c54e73d3d79bb84b867aedc6d43eac8"
+      },
+      "sequence": 3
+    },
+    {
+      "eventId": "hook-67ed0a2842f2b08be0c342e00d7c4cd1",
+      "findingId": "mimosa-45f450a48b7ff4d3a4f0c216",
+      "type": "finding_blocked",
+      "at": "2026-09-04T02:42:07.375Z",
+      "identity": {
+        "projectRelativeFile": "backend/internal/service/service.go",
+        "ruleId": "security",
+        "codeEvidenceHash": "9a2bb78cd5f5d14fe4efef111b2fb620c6f14c89e1f61d98e8941b0489bf1cb3",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 92,
+      "endLine": 92,
+      "reasonCode": "deny",
+      "reportedToAgent": true,
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "evidenceHash": "9a2bb78cd5f5d14fe4efef111b2fb620c6f14c89e1f61d98e8941b0489bf1cb3"
+      },
+      "sequence": 4
+    },
+    {
+      "eventId": "hook-9d3503bf19d5e3dc20a17cc0f67fb4b7",
+      "findingId": "mimosa-45f450a48b7ff4d3a4f0c216",
+      "type": "static_fix_verified",
+      "at": "2026-09-04T02:42:39.715Z",
+      "identity": {
+        "projectRelativeFile": "backend/internal/service/service.go",
+        "ruleId": "security",
+        "codeEvidenceHash": "9a2bb78cd5f5d14fe4efef111b2fb620c6f14c89e1f61d98e8941b0489bf1cb3",
+        "confidence": "stable"
+      },
+      "scope": "direct",
+      "line": 92,
+      "endLine": 92,
+      "reasonCode": "static_rescan_passed",
+      "reportedToAgent": false,
+      "evidence": {
+        "kind": "static_scan",
+        "boundary": "observed",
+        "producer": "deterministic",
+        "evidenceHash": "9a2bb78cd5f5d14fe4efef111b2fb620c6f14c89e1f61d98e8941b0489bf1cb3"
+      },
+      "sequence": 5
+    }
+  ],
+  "observedFindingIds": [],
+  "verifiedFiles": [
+    {
+      "file": "backend/internal/config/config.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/pkg/logger/logger.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/internal/device/device.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/internal/device/ram.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/internal/device/ram_windows.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/internal/device/vram.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/internal/device/detector.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/internal/device/detector_windows.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/internal/fs/filesystem.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/internal/fs/inode.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/internal/fs/memfs.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/internal/fs/file.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/internal/fs/path.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/cmd/server/main.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/internal/device/manager.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/internal/api/middleware/auth.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/internal/api/router.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/internal/api/handler/handler.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/internal/service/service.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    },
+    {
+      "file": "backend/internal/s3/handler.go",
+      "direct": "complete",
+      "projectContext": "partial"
+    }
+  ],
+  "recordedAt": "2026-09-04T02:56:43.662Z"
+}

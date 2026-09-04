@@ -1,0 +1,301 @@
+package s3
+
+import (
+	"encoding/xml"
+	"fmt"
+	"io"
+	"net/http"
+	"strings"
+	"time"
+
+	"memesplora/backend/internal/config"
+	"memesplora/backend/internal/service"
+	"memesplora/backend/pkg/logger"
+)
+
+type S3Handler struct {
+	svc *service.Service
+	cfg *config.Config
+}
+
+func NewHandler(svc *service.Service, cfg *config.Config) *S3Handler {
+	return &S3Handler{svc: svc, cfg: cfg}
+}
+
+func (h *S3Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	logger.Debug("S3 request: %s %s", r.Method, r.URL.Path)
+
+	// Parse the request
+	path := strings.TrimPrefix(r.URL.Path, "/")
+	parts := strings.SplitN(path, "/", 2)
+
+	bucket := parts[0]
+	object := ""
+	if len(parts) > 1 {
+		object = parts[1]
+	}
+
+	// Handle different operations
+	switch {
+	case r.Method == http.MethodGet && bucket == "":
+		h.listBuckets(w, r)
+	case r.Method == http.MethodHead && object == "":
+		h.headBucket(w, r, bucket)
+	case r.Method == http.MethodGet && object == "":
+		h.listObjects(w, r, bucket)
+	case r.Method == http.MethodGet && object != "":
+		h.getObject(w, r, bucket, object)
+	case r.Method == http.MethodPut && object == "":
+		// CreateBucket or PutObject
+		if r.URL.Query().Get("uploads") != "" {
+			h.createMultipartUpload(w, r, bucket, object)
+		} else {
+			h.putObject(w, r, bucket, "")
+		}
+	case r.Method == http.MethodPut && object != "":
+		if r.URL.Query().Get("uploadId") != "" && r.URL.Query().Get("partNumber") != "" {
+			h.uploadPart(w, r, bucket, object)
+		} else {
+			h.putObject(w, r, bucket, object)
+		}
+	case r.Method == http.MethodDelete && object == "":
+		h.deleteBucket(w, r, bucket)
+	case r.Method == http.MethodDelete && object != "":
+		// DeleteObject or DeleteObjects
+		if r.URL.Query().Get("uploadId") != "" {
+			h.abortMultipartUpload(w, r, bucket, object)
+		} else {
+			h.deleteObject(w, r, bucket, object)
+		}
+	case r.Method == http.MethodPost && object != "":
+		if r.URL.Query().Get("uploads") != "" {
+			h.createMultipartUpload(w, r, bucket, object)
+		} else if r.URL.Query().Get("uploadId") != "" {
+			h.completeMultipartUpload(w, r, bucket, object)
+		} else if r.URL.Query().Get("delete") != "" {
+			h.deleteObjects(w, r, bucket)
+		}
+	case r.Method == http.MethodOptions:
+		w.Header().Set("Allow", "GET,HEAD,PUT,DELETE,POST,OPTIONS")
+		w.WriteHeader(http.StatusOK)
+	default:
+		h.writeError(w, ErrNotImplemented)
+	}
+}
+
+// ListBuckets
+func (h *S3Handler) listBuckets(w http.ResponseWriter, r *http.Request) {
+	spaces := h.svc.ListSpaces(1) // Simplified: admin user
+
+	type Bucket struct {
+		XMLName      xml.Name `xml:"Bucket"`
+		Name         string   `xml:"Name"`
+		CreationDate string   `xml:"CreationDate"`
+	}
+
+	type ListAllMyBucketsResult struct {
+		XMLName xml.Name `xml:"ListAllMyBucketsResult"`
+		Owner   struct {
+			ID          string `xml:"ID"`
+			DisplayName string `xml:"DisplayName"`
+		} `xml:"Owner"`
+		Buckets struct {
+			Bucket []Bucket `xml:"Bucket"`
+		} `xml:"Buckets"`
+	}
+
+	result := ListAllMyBucketsResult{}
+	result.Owner.ID = "memesplora"
+	result.Owner.DisplayName = "Memesplora"
+
+	for _, space := range spaces {
+		result.Buckets.Bucket = append(result.Buckets.Bucket, Bucket{
+			Name:         space.Name,
+			CreationDate: space.CreatedAt,
+		})
+	}
+
+	h.writeXML(w, http.StatusOK, result)
+}
+
+func (h *S3Handler) headBucket(w http.ResponseWriter, r *http.Request, bucket string) {
+	// Simplified: check if space exists
+	spaces := h.svc.ListSpaces(1)
+	for _, s := range spaces {
+		if s.Name == bucket {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+	}
+	h.writeError(w, ErrNoSuchBucket)
+}
+
+func (h *S3Handler) listObjects(w http.ResponseWriter, r *http.Request, bucket string) {
+	prefix := r.URL.Query().Get("prefix")
+	_ = r.URL.Query().Get("delimiter") // reserved for future use
+
+	// List files from the filesystem
+	path := "/"
+	if prefix != "" {
+		path = "/" + prefix
+	}
+
+	files, _, err := h.svc.ListFiles(bucket, path, 1, 1000, "name")
+	if err != nil {
+		h.writeError(w, ErrNoSuchBucket)
+		return
+	}
+
+	type Contents struct {
+		Key          string `xml:"Key"`
+		LastModified string `xml:"LastModified"`
+		ETag         string `xml:"ETag"`
+		Size         int64  `xml:"Size"`
+		StorageClass string `xml:"StorageClass"`
+	}
+
+	type ListBucketResult struct {
+		XMLName     xml.Name   `xml:"ListBucketResult"`
+		Name        string     `xml:"Name"`
+		Prefix      string     `xml:"Prefix"`
+		MaxKeys     int        `xml:"MaxKeys"`
+		IsTruncated bool       `xml:"IsTruncated"`
+		Contents    []Contents `xml:"Contents"`
+	}
+
+	result := ListBucketResult{
+		Name:        bucket,
+		Prefix:      prefix,
+		MaxKeys:     1000,
+		IsTruncated: false,
+	}
+
+	for _, file := range files {
+		if file.Type == "file" {
+			result.Contents = append(result.Contents, Contents{
+				Key:          strings.TrimPrefix(file.Path, "/"),
+				LastModified: file.ModifiedAt,
+				ETag:         fmt.Sprintf("\"%x\"", file.Size),
+				Size:         file.Size,
+				StorageClass: "STANDARD",
+			})
+		}
+	}
+
+	h.writeXML(w, http.StatusOK, result)
+}
+
+func (h *S3Handler) getObject(w http.ResponseWriter, r *http.Request, bucket, object string) {
+	reader, name, err := h.svc.GetFileByPath("/" + object)
+	if err != nil {
+		h.writeError(w, ErrNoSuchKey)
+		return
+	}
+	defer reader.Close()
+
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"%s\"", name))
+	w.Header().Set("Last-Modified", time.Now().Format(http.TimeFormat))
+	io.Copy(w, reader)
+}
+
+func (h *S3Handler) putObject(w http.ResponseWriter, r *http.Request, bucket, object string) {
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		h.writeError(w, ErrInvalidRequest)
+		return
+	}
+	defer r.Body.Close()
+
+	path := "/" + object
+	if err := h.svc.WriteFile(path, data); err != nil {
+		h.writeError(w, ErrInternalError)
+		return
+	}
+
+	w.Header().Set("ETag", fmt.Sprintf("\"%x\"", len(data)))
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *S3Handler) deleteObject(w http.ResponseWriter, r *http.Request, bucket, object string) {
+	if err := h.svc.DeleteFileByPath("/" + object); err != nil {
+		h.writeError(w, ErrNoSuchKey)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *S3Handler) deleteObjects(w http.ResponseWriter, r *http.Request, bucket string) {
+	// Simplified: parse XML body and delete each object
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *S3Handler) deleteBucket(w http.ResponseWriter, r *http.Request, bucket string) {
+	if err := h.svc.DeleteSpace(bucket); err != nil {
+		h.writeError(w, ErrNoSuchBucket)
+		return
+	}
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *S3Handler) createMultipartUpload(w http.ResponseWriter, r *http.Request, bucket, object string) {
+	uploadID := fmt.Sprintf("upload_%d", time.Now().UnixNano())
+
+	type InitiateMultipartUploadResult struct {
+		XMLName  xml.Name `xml:"InitiateMultipartUploadResult"`
+		Bucket   string   `xml:"Bucket"`
+		Key      string   `xml:"Key"`
+		UploadID string   `xml:"UploadId"`
+	}
+
+	result := InitiateMultipartUploadResult{
+		Bucket:   bucket,
+		Key:      object,
+		UploadID: uploadID,
+	}
+
+	h.writeXML(w, http.StatusOK, result)
+}
+
+func (h *S3Handler) uploadPart(w http.ResponseWriter, r *http.Request, bucket, object string) {
+	partNumber := r.URL.Query().Get("partNumber")
+	w.Header().Set("ETag", fmt.Sprintf("\"part_%s\"", partNumber))
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *S3Handler) completeMultipartUpload(w http.ResponseWriter, r *http.Request, bucket, object string) {
+	type CompleteMultipartUploadResult struct {
+		XMLName  xml.Name `xml:"CompleteMultipartUploadResult"`
+		Location string   `xml:"Location"`
+		Bucket   string   `xml:"Bucket"`
+		Key      string   `xml:"Key"`
+		ETag     string   `xml:"ETag"`
+	}
+
+	result := CompleteMultipartUploadResult{
+		Location: fmt.Sprintf("/%s/%s", bucket, object),
+		Bucket:   bucket,
+		Key:      object,
+		ETag:     fmt.Sprintf("\"%x\"", time.Now().UnixNano()),
+	}
+
+	h.writeXML(w, http.StatusOK, result)
+}
+
+func (h *S3Handler) abortMultipartUpload(w http.ResponseWriter, r *http.Request, bucket, object string) {
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *S3Handler) writeXML(w http.ResponseWriter, status int, v interface{}) {
+	w.Header().Set("Content-Type", "application/xml")
+	w.WriteHeader(status)
+	enc := xml.NewEncoder(w)
+	enc.Indent("", "  ")
+	enc.Encode(v)
+}
+
+func (h *S3Handler) writeError(w http.ResponseWriter, err S3Error) {
+	w.Header().Set("Content-Type", "application/xml")
+	w.WriteHeader(err.HTTPStatus)
+	xml.NewEncoder(w).Encode(err)
+}

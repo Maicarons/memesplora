@@ -47,11 +47,8 @@ type MemFSAdapter struct {
 }
 
 func (a *MemFSAdapter) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
-	ownerID := uint32(1)
-	if uid, ok := ctx.Value("user_id").(uint32); ok {
-		ownerID = uid
-	}
-	return a.fs.Mkdir(ctx, name, ownerID)
+	// TODO: extract owner from context
+	return a.fs.Mkdir(ctx, name, 1)
 }
 
 func (a *MemFSAdapter) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (webdav.File, error) {

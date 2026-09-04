@@ -1,0 +1,506 @@
+{
+  "schema_version": "mimosa-task-review/v2",
+  "run_id": "20260904T025643002Z-17024-3d97e717e3dd",
+  "run_status": "inconclusive",
+  "errors": [
+    {
+      "stage": "candidate-select",
+      "target": "backend/internal/s3/error.go",
+      "reason": "candidate_limit_exceeded: 20 changed reviewable file(s) were not scanned because the limit is 20"
+    }
+  ],
+  "coverage": {
+    "schema_version": "mimosa-hook-coverage/v1",
+    "status": "partial",
+    "scope": "hook_observed_diff",
+    "baseline": {
+      "complete": true,
+      "captured_files": 40,
+      "candidate_limit": 5000,
+      "truncated": false,
+      "enumeration_error_count": 0,
+      "snapshot_error_count": 0,
+      "compensated_target_count": 40
+    },
+    "change_tracking": {
+      "touched_observed": 40,
+      "touched_retained": 40,
+      "truncated": false,
+      "bash_mutation": false,
+      "bash_discovered": 0,
+      "bash_discovery_limit": 80,
+      "bash_discovery_truncated": false
+    },
+    "candidates": {
+      "eligible_files": 40,
+      "selected_files": 20,
+      "limit": 20,
+      "truncated": true
+    },
+    "scanning": {
+      "required_files": 20,
+      "scanned_files": 20,
+      "skipped_files": 0,
+      "failed_files": 0,
+      "project_checks_required": 0,
+      "project_checks_completed": 0
+    },
+    "notification": {
+      "eligible_findings": 0,
+      "detailed_findings": 0,
+      "detail_limit": 3,
+      "truncated": false
+    },
+    "reason_counts": {
+      "candidate_limit_exceeded": 1,
+      "project_check_failed": 1
+    },
+    "reasons": [
+      {
+        "code": "candidate_limit_exceeded",
+        "stage": "candidate-select",
+        "target": "backend/internal/s3/error.go",
+        "detail": "20 changed reviewable file(s) were not scanned because the limit is 20",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "candidate-select",
+        "target": "backend/internal/s3/error.go",
+        "detail": "candidate_limit_exceeded: 20 changed reviewable file(s) were not scanned because the limit is 20",
+        "affects_completion": true
+      }
+    ],
+    "reasons_truncated": false
+  },
+  "generated_at": "2026-09-04T02:56:43.002Z",
+  "session_id": "sess_aa86db0d-79dd-4312-b867-36dafa233574",
+  "target": ".",
+  "revision": "14a5384044a48afbc67057cf65803d50e8b31efc",
+  "rules_version": "unavailable",
+  "diff_hash": "e793b9e52097108789ca1e8b6f90acc0897ead540a4f7ad8807b5f8c16897d8f",
+  "diff": {
+    "algorithm": "sha256",
+    "changed_file_count": 20,
+    "changed_files": [
+      {
+        "file": "backend/cmd/server/main.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 134
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "958fe18eb06b6821bc966bd7ef841baaf6cb514fb9def93f5d041e9dd3d7927f"
+      },
+      {
+        "file": "backend/internal/api/handler/handler.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 377
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "5ec036461eb4d3f23d409c9c57c20494e851128783975ce63c0bdb36c5b0f0aa"
+      },
+      {
+        "file": "backend/internal/api/middleware/auth.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 129
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "be0f26cda8bd152f03fffba9b2bb6704f604906213760282e308d505a673f7d5"
+      },
+      {
+        "file": "backend/internal/api/router.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 92
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "76e416b165b3aee77c48030d64469979e8b943f698083aabfd1a87be09387156"
+      },
+      {
+        "file": "backend/internal/config/config.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 85
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "fc7d15dc847999248e25bf011f514efc4b0f0efd76cefe2e3b08f014a57df5ec"
+      },
+      {
+        "file": "backend/internal/device/detector_windows.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 75
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "99789b6b897e3a262c18e8f22ee365c6bbc9f4f4c9584a6286546221a7e39d4a"
+      },
+      {
+        "file": "backend/internal/device/detector.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 82
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "1ba2d84660d41c6612500b2666fd5766deb7ea9da2be286db55044cf7ebb4f4a"
+      },
+      {
+        "file": "backend/internal/device/device.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 68
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "e9fd8e3e082eec1f5668590cfd04c46f1824e80c927e01f83a77a89c6e0d0887"
+      },
+      {
+        "file": "backend/internal/device/manager.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 56
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "deed4c18b036470412f6599bc3b28885effa84a08d9c43bcd2408ff551207269"
+      },
+      {
+        "file": "backend/internal/device/ram_windows.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 226
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "863bad83b2320cbee7fb3bc0529d572a6a8fd36fcdeb7a5a0e17841974d6c2d7"
+      },
+      {
+        "file": "backend/internal/device/ram.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 242
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "cef52125fe739921f0490eaf7eac09e2fd168ed03edc2753de7c87f44016fc78"
+      },
+      {
+        "file": "backend/internal/device/vram.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 130
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "2f90c53e2445c75a4b7229361a1278b5c625d4fb9d31c8c74014d255bbf768a5"
+      },
+      {
+        "file": "backend/internal/fs/file.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 190
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "332451f556a6c902d901ec9a0f7a4aa340efe36d0ed0771bcd0af265716b1a0e"
+      },
+      {
+        "file": "backend/internal/fs/filesystem.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 86
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "d0fc16630f63d690a3522a994a22f7c75a3e800284fa2a979107b95b13a4a292"
+      },
+      {
+        "file": "backend/internal/fs/inode.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 235
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "28d42eea5ec4099504402400047efa50dc54dd768a9f9841534a480abf5c55eb"
+      },
+      {
+        "file": "backend/internal/fs/memfs.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 523
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "c756ebdb3805eed1bd59f93fc75126b6bb173b767dd8777f434a46bc718882c5"
+      },
+      {
+        "file": "backend/internal/fs/path.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 62
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "145dfd995327df5fdc0da6b5898323c183bf28ad765eb62a010ba4a779acbf52"
+      },
+      {
+        "file": "backend/internal/s3/handler.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 301
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "64781a2b076c240f8cb457f8d173d2e1c1e7babbeedb023d601b4c3fd6cd5a50"
+      },
+      {
+        "file": "backend/internal/service/service.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 453
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "10371c13bc1612acb8c51b07bd9f331387a384aab6df0d187aa0db0f90896d72"
+      },
+      {
+        "file": "backend/pkg/logger/logger.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 61
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "d8a1b85d8ad17c5ef6d84f7fcae6ddcf9ce092108ffd90f9244ab55f18858832"
+      }
+    ]
+  },
+  "timing": {
+    "started_at": "2026-09-04T02:56:40.557Z",
+    "completed_at": "2026-09-04T02:56:43.002Z",
+    "duration_ms": 2445,
+    "measurement": "hook_wall_clock"
+  },
+  "tokens": {
+    "input": 0,
+    "output": 0,
+    "total": 0,
+    "model_calls": 0,
+    "measurement": "known-zero"
+  },
+  "telemetry": {
+    "schemaVersion": "mimosa-gate-telemetry/v1",
+    "profile": "gate",
+    "operation": "Stop",
+    "outcome": "partial/INCONCLUSIVE",
+    "latencyMs": 2445,
+    "peakMemoryBytes": 126615552,
+    "memoryMeasurement": "max-observed-process-rss",
+    "scannedFiles": 20,
+    "cache": {
+      "hits": 0,
+      "misses": 0,
+      "measurement": "not-applicable"
+    },
+    "denyCount": 0,
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "total": 0,
+      "modelCalls": 0,
+      "measurement": "known-zero"
+    }
+  },
+  "finding_count": 0,
+  "rewake_finding_count": 0,
+  "evidence_boundary": {
+    "scan": "candidate",
+    "static_fix_verification": "observed_static_only",
+    "runtime_verification": "not_performed"
+  },
+  "finding_events": [
+    {
+      "finding_id": "mimosa-f43322c75c3bcaee0e708546",
+      "file": "backend/cmd/server/main.go",
+      "line": 78,
+      "rule_id": "security",
+      "severity": "medium",
+      "category": "服务资源耗尽",
+      "status": "candidate",
+      "decision": "advisory",
+      "at": "2026-09-04T02:40:15.490Z",
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "source": "semgrep",
+        "evidence_hash": "65e3efd3a6846032b0e1ae86feb9d72bbf9a9a327f7048b98fe7885f120b14d9",
+        "runtime_oracle": false
+      }
+    },
+    {
+      "finding_id": "mimosa-5a0e0ed1879daab888fac439",
+      "file": "backend/cmd/server/main.go",
+      "line": 84,
+      "rule_id": "security",
+      "severity": "medium",
+      "category": "服务资源耗尽",
+      "status": "candidate",
+      "decision": "advisory",
+      "at": "2026-09-04T02:40:15.490Z",
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "source": "semgrep",
+        "evidence_hash": "dea993d0a742f80a1e6b79f4da1e3e86568cf9f9faabfa7c4488413e49e91fce",
+        "runtime_oracle": false
+      }
+    },
+    {
+      "finding_id": "mimosa-0b5e2ecdaf1389852aab67ad",
+      "file": "backend/internal/api/middleware/auth.go",
+      "line": 77,
+      "rule_id": "security",
+      "severity": "high",
+      "category": "CORS 过度开放",
+      "status": "candidate",
+      "decision": "advisory",
+      "at": "2026-09-04T02:41:15.752Z",
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "source": "semgrep",
+        "evidence_hash": "fbd34950d5edc800e7b08ca1f7a411932c54e73d3d79bb84b867aedc6d43eac8",
+        "runtime_oracle": false
+      }
+    },
+    {
+      "finding_id": "mimosa-0b5e2ecdaf1389852aab67ad",
+      "file": "backend/internal/api/middleware/auth.go",
+      "line": 15,
+      "rule_id": "security",
+      "severity": "high",
+      "category": "CORS 过度开放",
+      "status": "candidate",
+      "decision": "advisory",
+      "at": "2026-09-04T02:41:25.761Z",
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "source": "semgrep",
+        "evidence_hash": "fbd34950d5edc800e7b08ca1f7a411932c54e73d3d79bb84b867aedc6d43eac8",
+        "runtime_oracle": false
+      }
+    },
+    {
+      "finding_id": "mimosa-45f450a48b7ff4d3a4f0c216",
+      "file": "backend/internal/service/service.go",
+      "line": 92,
+      "rule_id": "security",
+      "severity": "high",
+      "category": "硬编码凭据",
+      "status": "blocked",
+      "decision": "deny",
+      "at": "2026-09-04T02:42:07.375Z",
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "source": "semgrep",
+        "evidence_hash": "9a2bb78cd5f5d14fe4efef111b2fb620c6f14c89e1f61d98e8941b0489bf1cb3",
+        "runtime_oracle": false
+      }
+    },
+    {
+      "finding_id": "mimosa-45f450a48b7ff4d3a4f0c216",
+      "file": "backend/internal/service/service.go",
+      "line": 92,
+      "rule_id": "security",
+      "severity": "high",
+      "category": "硬编码凭据",
+      "status": "fixed_candidate",
+      "decision": "repair_observed",
+      "at": "2026-09-04T02:42:39.715Z",
+      "evidence": {
+        "kind": "source",
+        "boundary": "candidate",
+        "producer": "deterministic",
+        "source": "semgrep",
+        "evidence_hash": "9a2bb78cd5f5d14fe4efef111b2fb620c6f14c89e1f61d98e8941b0489bf1cb3",
+        "candidate_before_evidence_hash": "9a2bb78cd5f5d14fe4efef111b2fb620c6f14c89e1f61d98e8941b0489bf1cb3",
+        "post_change_evidence_hash_at_previous_location": "a43787d4d8e487636a0c945c406488f268dae5a9a3c1068b6098ac87fe71ded7",
+        "runtime_oracle": false,
+        "verification": {
+          "method": "mimosa-posttool-static-rescan",
+          "finding_absent": true,
+          "runtime_oracle": false
+        }
+      }
+    },
+    {
+      "finding_id": "mimosa-45f450a48b7ff4d3a4f0c216",
+      "file": "backend/internal/service/service.go",
+      "line": 92,
+      "rule_id": "security",
+      "severity": "high",
+      "category": "硬编码凭据",
+      "status": "static_verified",
+      "decision": "static_rescan_passed",
+      "at": "2026-09-04T02:42:39.715Z",
+      "evidence": {
+        "kind": "static_scan",
+        "boundary": "observed",
+        "producer": "deterministic",
+        "source": "semgrep",
+        "evidence_hash": "9a2bb78cd5f5d14fe4efef111b2fb620c6f14c89e1f61d98e8941b0489bf1cb3",
+        "candidate_before_evidence_hash": "9a2bb78cd5f5d14fe4efef111b2fb620c6f14c89e1f61d98e8941b0489bf1cb3",
+        "post_change_evidence_hash_at_previous_location": "a43787d4d8e487636a0c945c406488f268dae5a9a3c1068b6098ac87fe71ded7",
+        "runtime_oracle": false,
+        "verification": {
+          "method": "mimosa-posttool-static-rescan",
+          "finding_absent": true,
+          "runtime_oracle": false
+        }
+      }
+    }
+  ],
+  "findings": [],
+  "artifacts": {
+    "immutable_report": ".mimosa/reports/task-review-sess_aa86db0d-79dd-4312-b867-36dafa233574-20260904T025643002Z-17024-3d97e717e3dd.json",
+    "latest_report": ".mimosa/reports/task-review-sess_aa86db0d-79dd-4312-b867-36dafa233574.json",
+    "history_summary": ".mimosa/history/run-20260904T025643002Z-17024-3d97e717e3dd.json"
+  }
+}
