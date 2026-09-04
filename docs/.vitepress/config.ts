@@ -2,21 +2,35 @@ import { defineConfig } from 'vitepress'
 
 export default defineConfig({
   title: 'Memesplora',
-  description: '内存/显存文件系统 - 将存储设备作为高速文件系统使用',
+  description: 'Memory & VRAM Filesystem - Use RAM and GPU VRAM as a high-speed file system',
   lang: 'zh-CN',
+  base: '/memesplora/',
+  lastUpdated: true,
+  cleanUrls: true,
+
+  head: [
+    ['link', { rel: 'icon', href: '/memesplora/favicon.ico' }],
+    ['meta', { name: 'theme-color', content: '#1677ff' }],
+    ['meta', { property: 'og:title', content: 'Memesplora' }],
+    ['meta', { property: 'og:description', content: 'Memory & VRAM Filesystem - Use RAM and GPU VRAM as a high-speed file system with Cloudreve-style UI, S3 and WebDAV support' }],
+    ['meta', { property: 'og:url', content: 'https://maicarons.github.io/memesplora/' }],
+  ],
+
   themeConfig: {
-    logo: '/logo.svg',
+    logo: '/memesplora/logo.svg',
     siteTitle: 'Memesplora',
+
     nav: [
       { text: '首页', link: '/' },
       { text: '架构指南', link: '/architecture/overview' },
       { text: 'API 文档', link: '/api/rest' },
       { text: '开发指南', link: '/guide/getting-started' },
     ],
+
     sidebar: {
       '/guide/': [
         {
-          text: '开发指南',
+          text: '指南',
           items: [
             { text: '快速开始', link: '/guide/getting-started' },
             { text: '项目结构', link: '/guide/project-structure' },
@@ -58,19 +72,35 @@ export default defineConfig({
             { text: '开发规范', link: '/development/standards' },
             { text: '测试指南', link: '/development/testing' },
             { text: '性能优化', link: '/development/performance' },
+            { text: 'CI/CD 配置', link: '/development/ci-cd' },
           ],
         },
       ],
     },
+
     socialLinks: [
-      { icon: 'github', link: 'https://github.com/memesplora/memesplora' },
+      { icon: 'github', link: 'https://github.com/Maicarons/memesplora' },
     ],
+
     footer: {
-      message: '基于 MIT 协议开源',
-      copyright: 'Copyright © 2024 Memesplora',
+      message: 'Apache License 2.0',
+      copyright: 'Copyright © 2026 Memesplora Contributors',
+    },
+
+    editLink: {
+      pattern: 'https://github.com/Maicarons/memesplora/edit/master/docs/:path',
+      text: '在 GitHub 上编辑此页',
+    },
+
+    lastUpdatedText: '最后更新',
+    docFooter: {
+      prev: '上一页',
+      next: '下一页',
+    },
+
+    outline: {
+      label: '目录',
+      level: 'deep',
     },
   },
-  head: [
-    ['link', { rel: 'icon', href: '/favicon.ico' }],
-  ],
 })

@@ -5,6 +5,10 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
 [![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go)](https://golang.org)
 [![React](https://img.shields.io/badge/React-18-61DAFB?logo=react)](https://reactjs.org)
+[![Backend CI](https://github.com/Maicarons/memesplora/actions/workflows/backend.yml/badge.svg)](https://github.com/Maicarons/memesplora/actions/workflows/backend.yml)
+[![Frontend CI](https://github.com/Maicarons/memesplora/actions/workflows/frontend.yml/badge.svg)](https://github.com/Maicarons/memesplora/actions/workflows/frontend.yml)
+[![Docs CI](https://github.com/Maicarons/memesplora/actions/workflows/docs.yml/badge.svg)](https://github.com/Maicarons/memesplora/actions/workflows/docs.yml)
+[![Docs](https://img.shields.io/badge/docs-vitepress-41B883?logo=vitepress)](https://maicarons.github.io/memesplora/)
 
 ---
 
@@ -73,6 +77,8 @@ docker run -d \
 ---
 
 ## 文档
+
+在线文档: [maicarons.github.io/memesplora](https://maicarons.github.io/memesplora/)
 
 完整文档在 [docs/](docs/) 目录，使用 VitePress 构建：
 

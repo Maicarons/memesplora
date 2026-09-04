@@ -1,0 +1,214 @@
+package webdav
+
+import (
+	"context"
+	"net/http"
+	"os"
+	"time"
+
+	"golang.org/x/net/webdav"
+
+	"memesplora/backend/internal/config"
+	"memesplora/backend/internal/fs"
+	"memesplora/backend/pkg/logger"
+)
+
+type Handler struct {
+	handler *webdav.Handler
+}
+
+func NewHandler(memfs *fs.MemFileSystem, cfg *config.Config) *Handler {
+	adapter := &MemFSAdapter{fs: memfs}
+	lockSystem := webdav.NewMemLS()
+
+	return &Handler{
+		handler: &webdav.Handler{
+			Prefix:     "/",
+			FileSystem: adapter,
+			LockSystem: lockSystem,
+			Logger: func(r *http.Request, err error) {
+				if err != nil {
+					logger.Warn("WebDAV: %s %s -> %v", r.Method, r.URL.Path, err)
+				} else {
+					logger.Debug("WebDAV: %s %s", r.Method, r.URL.Path)
+				}
+			},
+		},
+	}
+}
+
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	h.handler.ServeHTTP(w, r)
+}
+
+// MemFSAdapter adapts the memory filesystem to webdav.FileSystem interface
+type MemFSAdapter struct {
+	fs *fs.MemFileSystem
+}
+
+func (a *MemFSAdapter) Mkdir(ctx context.Context, name string, perm os.FileMode) error {
+	ownerID := uint32(1)
+	if uid, ok := ctx.Value("user_id").(uint32); ok {
+		ownerID = uid
+	}
+	return a.fs.Mkdir(ctx, name, ownerID)
+}
+
+func (a *MemFSAdapter) OpenFile(ctx context.Context, name string, flag int, perm os.FileMode) (webdav.File, error) {
+	// Handle directory listing
+	if flag == os.O_RDONLY {
+		// First try to open as file
+		file, err := a.fs.Open(ctx, name)
+		if err == nil {
+			return &webdavFile{file: file}, nil
+		}
+		// If it's a directory, return a directory file
+		info, err := a.fs.Stat(ctx, name)
+		if err == nil && info.Type == fs.FileTypeDirectory {
+			return &webdavDir{fs: a.fs, path: name}, nil
+		}
+		return nil, err
+	}
+
+	// Create or truncate
+	file, err := a.fs.Create(ctx, name, 1)
+	if err != nil {
+		return nil, err
+	}
+	return &webdavFile{file: file}, nil
+}
+
+func (a *MemFSAdapter) RemoveAll(ctx context.Context, name string) error {
+	return a.fs.Delete(ctx, name)
+}
+
+func (a *MemFSAdapter) Rename(ctx context.Context, oldName, newName string) error {
+	return a.fs.Rename(ctx, oldName, newName)
+}
+
+func (a *MemFSAdapter) Stat(ctx context.Context, name string) (os.FileInfo, error) {
+	info, err := a.fs.Stat(ctx, name)
+	if err != nil {
+		return nil, err
+	}
+	return &memFileInfo{info: info}, nil
+}
+
+// webdavDir implements webdav.File for directory listing
+type webdavDir struct {
+	fs   *fs.MemFileSystem
+	path string
+	pos  int64
+}
+
+func (d *webdavDir) Read(p []byte) (int, error) {
+	return 0, os.ErrInvalid
+}
+
+func (d *webdavDir) Write(p []byte) (int, error) {
+	return 0, os.ErrInvalid
+}
+
+func (d *webdavDir) Seek(offset int64, whence int) (int64, error) {
+	return 0, os.ErrInvalid
+}
+
+func (d *webdavDir) Close() error {
+	return nil
+}
+
+func (d *webdavDir) Stat() (os.FileInfo, error) {
+	info, err := d.fs.Stat(context.Background(), d.path)
+	if err != nil {
+		return nil, err
+	}
+	return &memFileInfo{info: info}, nil
+}
+
+func (d *webdavDir) Readdir(count int) ([]os.FileInfo, error) {
+	entries, err := d.fs.ReadDir(context.Background(), d.path)
+	if err != nil {
+		return nil, err
+	}
+
+	var fileInfos []os.FileInfo
+	for _, e := range entries {
+		fileInfos = append(fileInfos, &memFileInfo{info: e})
+	}
+
+	// Handle pagination
+	if d.pos >= int64(len(fileInfos)) {
+		return nil, nil
+	}
+	if count > 0 {
+		end := d.pos + int64(count)
+		if end > int64(len(fileInfos)) {
+			end = int64(len(fileInfos))
+		}
+		result := fileInfos[d.pos:end]
+		d.pos = end
+		return result, nil
+	}
+
+d.pos = int64(len(fileInfos))
+		return fileInfos, nil
+	}
+
+// webdavFile wraps fs.File to implement webdav.File
+type webdavFile struct {
+	file   fs.File
+	offset int64
+}
+
+func (wf *webdavFile) Read(p []byte) (int, error) {
+	return wf.file.Read(p)
+}
+
+func (wf *webdavFile) Write(p []byte) (int, error) {
+	return wf.file.Write(p)
+}
+
+func (wf *webdavFile) Seek(offset int64, whence int) (int64, error) {
+	return wf.file.Seek(offset, whence)
+}
+
+func (wf *webdavFile) Close() error {
+	return wf.file.Close()
+}
+
+func (wf *webdavFile) Readdir(count int) ([]os.FileInfo, error) {
+	return nil, os.ErrInvalid
+}
+
+func (wf *webdavFile) Stat() (os.FileInfo, error) {
+	info, err := wf.file.Stat()
+	if err != nil {
+		return nil, err
+	}
+	return &memFileInfo{info: info}, nil
+}
+
+func (wf *webdavFile) Sync() error {
+	return wf.file.Sync()
+}
+
+func (wf *webdavFile) Truncate(size int64) error {
+	return wf.file.Truncate(size)
+}
+
+// memFileInfo implements os.FileInfo
+type memFileInfo struct {
+	info fs.FileInfo
+}
+
+func (fi *memFileInfo) Name() string      { return fi.info.Name }
+func (fi *memFileInfo) Size() int64       { return fi.info.Size }
+func (fi *memFileInfo) Mode() os.FileMode {
+	if fi.info.Type == fs.FileTypeDirectory {
+		return os.ModeDir | 0755
+	}
+	return fi.info.Perm
+}
+func (fi *memFileInfo) ModTime() time.Time { return fi.info.ModifiedAt }
+func (fi *memFileInfo) IsDir() bool        { return fi.info.Type == fs.FileTypeDirectory }
+func (fi *memFileInfo) Sys() interface{}   { return nil }

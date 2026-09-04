@@ -1,0 +1,587 @@
+{
+  "schema_version": "mimosa-task-review/v2",
+  "run_id": "20260904T040332567Z-676-0f745388697b",
+  "run_status": "inconclusive",
+  "errors": [
+    {
+      "stage": "candidate-select",
+      "target": "internal/model/ent/schema/user.go",
+      "reason": "changed_file_unreadable: observed changed file no longer exists or cannot be read"
+    },
+    {
+      "stage": "candidate-select",
+      "target": "internal/model/ent/schema/space.go",
+      "reason": "changed_file_unreadable: observed changed file no longer exists or cannot be read"
+    },
+    {
+      "stage": "candidate-select",
+      "target": "internal/model/ent/schema/file.go",
+      "reason": "changed_file_unreadable: observed changed file no longer exists or cannot be read"
+    },
+    {
+      "stage": "candidate-select",
+      "target": "internal/model/ent/schema/share.go",
+      "reason": "changed_file_unreadable: observed changed file no longer exists or cannot be read"
+    },
+    {
+      "stage": "baseline",
+      "target": ".",
+      "reason": "baseline_partial: baseline capture had enumeration or snapshot errors"
+    }
+  ],
+  "coverage": {
+    "schema_version": "mimosa-hook-coverage/v1",
+    "status": "partial",
+    "scope": "hook_observed_diff",
+    "baseline": {
+      "complete": false,
+      "captured_files": 17,
+      "candidate_limit": 5000,
+      "truncated": false,
+      "enumeration_error_count": 0,
+      "snapshot_error_count": 4,
+      "compensated_target_count": 13
+    },
+    "change_tracking": {
+      "touched_observed": 17,
+      "touched_retained": 17,
+      "truncated": false,
+      "bash_mutation": true,
+      "bash_discovered": 13,
+      "bash_discovery_limit": 80,
+      "bash_discovery_truncated": false
+    },
+    "candidates": {
+      "eligible_files": 13,
+      "selected_files": 13,
+      "limit": 20,
+      "truncated": false
+    },
+    "scanning": {
+      "required_files": 11,
+      "scanned_files": 11,
+      "skipped_files": 0,
+      "failed_files": 0,
+      "project_checks_required": 1,
+      "project_checks_completed": 1
+    },
+    "notification": {
+      "eligible_findings": 0,
+      "detailed_findings": 0,
+      "detail_limit": 3,
+      "truncated": false
+    },
+    "reason_counts": {
+      "changed_file_unreadable": 4,
+      "baseline_partial": 1,
+      "project_check_failed": 5
+    },
+    "reasons": [
+      {
+        "code": "changed_file_unreadable",
+        "stage": "candidate-select",
+        "target": "internal/model/ent/schema/user.go",
+        "detail": "observed changed file no longer exists or cannot be read",
+        "affects_completion": true
+      },
+      {
+        "code": "changed_file_unreadable",
+        "stage": "candidate-select",
+        "target": "internal/model/ent/schema/space.go",
+        "detail": "observed changed file no longer exists or cannot be read",
+        "affects_completion": true
+      },
+      {
+        "code": "changed_file_unreadable",
+        "stage": "candidate-select",
+        "target": "internal/model/ent/schema/file.go",
+        "detail": "observed changed file no longer exists or cannot be read",
+        "affects_completion": true
+      },
+      {
+        "code": "changed_file_unreadable",
+        "stage": "candidate-select",
+        "target": "internal/model/ent/schema/share.go",
+        "detail": "observed changed file no longer exists or cannot be read",
+        "affects_completion": true
+      },
+      {
+        "code": "baseline_partial",
+        "stage": "baseline",
+        "target": ".",
+        "detail": "baseline capture had enumeration or snapshot errors",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "candidate-select",
+        "target": "internal/model/ent/schema/user.go",
+        "detail": "changed_file_unreadable: observed changed file no longer exists or cannot be read",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "candidate-select",
+        "target": "internal/model/ent/schema/space.go",
+        "detail": "changed_file_unreadable: observed changed file no longer exists or cannot be read",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "candidate-select",
+        "target": "internal/model/ent/schema/file.go",
+        "detail": "changed_file_unreadable: observed changed file no longer exists or cannot be read",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "candidate-select",
+        "target": "internal/model/ent/schema/share.go",
+        "detail": "changed_file_unreadable: observed changed file no longer exists or cannot be read",
+        "affects_completion": true
+      },
+      {
+        "code": "project_check_failed",
+        "stage": "baseline",
+        "target": ".",
+        "detail": "baseline_partial: baseline capture had enumeration or snapshot errors",
+        "affects_completion": true
+      }
+    ],
+    "reasons_truncated": false
+  },
+  "generated_at": "2026-09-04T04:03:32.567Z",
+  "session_id": "sess_aa86db0d-79dd-4312-b867-36dafa233574",
+  "target": ".",
+  "revision": "51bd921877f0b3b3f80f49671362fcd7a74e7626",
+  "rules_version": "unavailable",
+  "diff_hash": "c9e3c999747ade01d7ace5bebc1c16403bdf55986bf7b4060135c449173a42fb",
+  "diff": {
+    "algorithm": "sha256",
+    "changed_file_count": 12,
+    "changed_files": [
+      {
+        "file": "go.mod",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 1
+          },
+          {
+            "start": 4,
+            "end": 41
+          }
+        ],
+        "before_hash": "8a1d759a28f474f2ef9b9f2834d10889ae52d225799187c71757b00baf9b1809",
+        "after_hash": "efd3942122fb5628fc40c9f322bd9f3d6ab707ead5f4c219887e72af456d2cd1"
+      },
+      {
+        "file": "internal/api/handler/handler.go",
+        "ranges": [
+          {
+            "start": 6,
+            "end": 6
+          },
+          {
+            "start": 224,
+            "end": 260
+          },
+          {
+            "start": 275,
+            "end": 295
+          },
+          {
+            "start": 431,
+            "end": 431
+          }
+        ],
+        "before_hash": "146dc21417e24648f3774144a1451b915197a612447fb64fe438242c3d0fc268",
+        "after_hash": "ee81699acbdc5167a04fcccd1299b8e8121d4003917064ca14beba928b83a0f5"
+      },
+      {
+        "file": "internal/api/middleware/auth.go",
+        "ranges": [
+          {
+            "start": 4,
+            "end": 4
+          },
+          {
+            "start": 50,
+            "end": 55
+          },
+          {
+            "start": 57,
+            "end": 57
+          },
+          {
+            "start": 63,
+            "end": 72
+          },
+          {
+            "start": 74,
+            "end": 78
+          },
+          {
+            "start": 80,
+            "end": 104
+          },
+          {
+            "start": 106,
+            "end": 106
+          }
+        ],
+        "before_hash": "40b2e829f2228147237ce418843948cfb7ed24eb66581a1a0129b9fe4a5abaf0",
+        "after_hash": "378decd977dbb8032056f598da8562e6f66279ed00f03a65034e278fd5e7a768"
+      },
+      {
+        "file": "internal/api/router.go",
+        "ranges": [
+          {
+            "start": 11,
+            "end": 11
+          },
+          {
+            "start": 25,
+            "end": 25
+          },
+          {
+            "start": 27,
+            "end": 27
+          },
+          {
+            "start": 31,
+            "end": 32
+          },
+          {
+            "start": 34,
+            "end": 34
+          },
+          {
+            "start": 36,
+            "end": 37
+          },
+          {
+            "start": 40,
+            "end": 41
+          },
+          {
+            "start": 43,
+            "end": 45
+          },
+          {
+            "start": 49,
+            "end": 50
+          },
+          {
+            "start": 52,
+            "end": 57
+          },
+          {
+            "start": 61,
+            "end": 62
+          },
+          {
+            "start": 64,
+            "end": 73
+          },
+          {
+            "start": 77,
+            "end": 78
+          },
+          {
+            "start": 80,
+            "end": 82
+          }
+        ],
+        "before_hash": "2ce16ab67360e4e45ecb483f87f44aa9dc344458031801b4ff1734515655f796",
+        "after_hash": "a4cfb661eb158bc18bd96a6cb16833f93a35a51e88f69fce28b8945ccc844cb0"
+      },
+      {
+        "file": "internal/device/detector_windows.go",
+        "ranges": [
+          {
+            "start": 8,
+            "end": 9
+          },
+          {
+            "start": 12,
+            "end": 29
+          },
+          {
+            "start": 37,
+            "end": 37
+          },
+          {
+            "start": 39,
+            "end": 42
+          },
+          {
+            "start": 51,
+            "end": 51
+          },
+          {
+            "start": 53,
+            "end": 61
+          },
+          {
+            "start": 69,
+            "end": 69
+          }
+        ],
+        "before_hash": "81d73f8db8c254b75c8521c147694fed02eaa5e356e2974e636e3aa92e65432a",
+        "after_hash": "6477d5995b0756401411b37acda9b89b8ace0a00f3026643d3d709fbe33f5d96"
+      },
+      {
+        "file": "internal/device/detector.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 1
+          },
+          {
+            "start": 24,
+            "end": 35
+          }
+        ],
+        "before_hash": "851d808fa241ebca691850d11f5794fe8f2706badcd4e5d9402bff7e59cf52ae",
+        "after_hash": "d67fd081acf669558ebe975d0e22abdd5a0503bd84f5eb36ac7386fcc8945037"
+      },
+      {
+        "file": "internal/device/ram_windows.go",
+        "ranges": [
+          {
+            "start": 38,
+            "end": 38
+          },
+          {
+            "start": 43,
+            "end": 50
+          },
+          {
+            "start": 222,
+            "end": 226
+          }
+        ],
+        "before_hash": "418cf8982ec8c0b48f303d4d7c30d811b3c8c6c0445f7f23c50fd9d66d632180",
+        "after_hash": "94021826a37913cf31e66f5ab7bcfe8c5ac9d94e288a583e6c6f5633311a4107"
+      },
+      {
+        "file": "internal/fs/inode.go",
+        "ranges": [
+          {
+            "start": 5,
+            "end": 234
+          }
+        ],
+        "before_hash": "356ddc394d0a5a6eb226edbdf1d4e5da0bc2669833a75a708f43cdda9119488c",
+        "after_hash": "28d42eea5ec4099504402400047efa50dc54dd768a9f9841534a480abf5c55eb"
+      },
+      {
+        "file": "internal/s3/handler.go",
+        "ranges": [
+          {
+            "start": 135,
+            "end": 135
+          }
+        ],
+        "before_hash": "0dc4e5724836d4b94b229cec2346fd624687e77ae8646347c3487fa86389ae1d",
+        "after_hash": "64781a2b076c240f8cb457f8d173d2e1c1e7babbeedb023d601b4c3fd6cd5a50"
+      },
+      {
+        "file": "internal/s3/signature.go",
+        "ranges": [
+          {
+            "start": 1,
+            "end": 86
+          }
+        ],
+        "before_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+        "after_hash": "81007e324d9c7bd2ad388b64a4edb8094b1364a62c6d8ecd0ac25bcbd8f33b8e"
+      },
+      {
+        "file": "internal/service/service.go",
+        "ranges": [
+          {
+            "start": 26,
+            "end": 26
+          },
+          {
+            "start": 29,
+            "end": 29
+          },
+          {
+            "start": 77,
+            "end": 77
+          },
+          {
+            "start": 87,
+            "end": 87
+          },
+          {
+            "start": 99,
+            "end": 99
+          },
+          {
+            "start": 102,
+            "end": 102
+          },
+          {
+            "start": 119,
+            "end": 159
+          },
+          {
+            "start": 299,
+            "end": 302
+          },
+          {
+            "start": 304,
+            "end": 304
+          },
+          {
+            "start": 309,
+            "end": 309
+          },
+          {
+            "start": 350,
+            "end": 351
+          },
+          {
+            "start": 354,
+            "end": 354
+          },
+          {
+            "start": 359,
+            "end": 359
+          },
+          {
+            "start": 364,
+            "end": 369
+          },
+          {
+            "start": 371,
+            "end": 371
+          },
+          {
+            "start": 374,
+            "end": 375
+          },
+          {
+            "start": 379,
+            "end": 390
+          },
+          {
+            "start": 394,
+            "end": 422
+          },
+          {
+            "start": 426,
+            "end": 454
+          },
+          {
+            "start": 458,
+            "end": 501
+          },
+          {
+            "start": 514,
+            "end": 516
+          },
+          {
+            "start": 518,
+            "end": 518
+          },
+          {
+            "start": 523,
+            "end": 523
+          },
+          {
+            "start": 540,
+            "end": 540
+          },
+          {
+            "start": 544,
+            "end": 548
+          }
+        ],
+        "before_hash": "eaa0b04001105784ac45890ac74e40e6b3aea6cc9cc294431429446d7eee3eb0",
+        "after_hash": "65ecb02cfda1cd3e59b417e67b3e8b71ead6499c9904cb1f69ce620535478b63"
+      },
+      {
+        "file": "internal/webdav/webdav.go",
+        "ranges": [
+          {
+            "start": 4,
+            "end": 4
+          },
+          {
+            "start": 50,
+            "end": 54
+          },
+          {
+            "start": 63,
+            "end": 63
+          },
+          {
+            "start": 78,
+            "end": 78
+          },
+          {
+            "start": 153,
+            "end": 196
+          }
+        ],
+        "before_hash": "0638438cc9345abe98a8509b54d1d6a2deec0003f9ac56a284b336e1c41c1aaf",
+        "after_hash": "64f2fa75fb7f88bb8ec1c33c46d8d68d0bca4468d757dfbed2d6eb7147a236d6"
+      }
+    ]
+  },
+  "timing": {
+    "started_at": "2026-09-04T04:03:29.991Z",
+    "completed_at": "2026-09-04T04:03:32.567Z",
+    "duration_ms": 2576,
+    "measurement": "hook_wall_clock"
+  },
+  "tokens": {
+    "input": 0,
+    "output": 0,
+    "total": 0,
+    "model_calls": 0,
+    "measurement": "known-zero"
+  },
+  "telemetry": {
+    "schemaVersion": "mimosa-gate-telemetry/v1",
+    "profile": "gate",
+    "operation": "Stop",
+    "outcome": "partial/INCONCLUSIVE",
+    "latencyMs": 2576,
+    "peakMemoryBytes": 126709760,
+    "memoryMeasurement": "max-observed-process-rss",
+    "scannedFiles": 11,
+    "cache": {
+      "hits": 0,
+      "misses": 0,
+      "measurement": "not-applicable"
+    },
+    "denyCount": 0,
+    "tokens": {
+      "input": 0,
+      "output": 0,
+      "total": 0,
+      "modelCalls": 0,
+      "measurement": "known-zero"
+    }
+  },
+  "finding_count": 0,
+  "rewake_finding_count": 0,
+  "evidence_boundary": {
+    "scan": "candidate",
+    "static_fix_verification": "observed_static_only",
+    "runtime_verification": "not_performed"
+  },
+  "finding_events": [],
+  "findings": [],
+  "artifacts": {
+    "immutable_report": ".mimosa/reports/task-review-sess_aa86db0d-79dd-4312-b867-36dafa233574-20260904T040332567Z-676-0f745388697b.json",
+    "latest_report": ".mimosa/reports/task-review-sess_aa86db0d-79dd-4312-b867-36dafa233574.json",
+    "history_summary": ".mimosa/history/run-20260904T040332567Z-676-0f745388697b.json"
+  }
+}
