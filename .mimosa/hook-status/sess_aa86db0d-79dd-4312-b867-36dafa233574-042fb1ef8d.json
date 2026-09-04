@@ -1,14 +1,14 @@
 {
   "schemaVersion": "mimosa-hook-status/v1",
-  "recordedAt": "2026-09-04T02:43:19.507Z",
+  "recordedAt": "2026-09-04T02:56:12.275Z",
   "sessionId": "sess_aa86db0d-79dd-4312-b867-36dafa233574",
   "event": "PostToolUse",
   "toolName": "Write",
-  "file": "backend/internal/webdav/webdav.go",
+  "file": "backend/pkg/logger/logger_test.go",
   "outcome": "clear",
   "coverage": "complete",
   "findingCount": 0,
-  "durationMs": 13,
+  "durationMs": 17,
   "hostState": "hook_complete",
   "reportHint": ".mimosa/reports/"
 }
