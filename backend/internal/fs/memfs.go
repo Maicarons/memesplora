@@ -1,0 +1,523 @@
+package fs
+
+import (
+	"context"
+	"fmt"
+	"os"
+	"strings"
+	"sync"
+	"time"
+
+	"memesplora/backend/pkg/logger"
+)
+
+type MemFileSystem struct {
+	mu         sync.RWMutex
+	superBlock *SuperBlock
+	blockSize  uint32
+	totalSize  uint64
+	inodes     map[uint32]*Inode
+	blocks     map[uint32][]byte
+	mounted    bool
+	nextInode  uint32
+	nextBlock  uint32
+	fileCount  uint64
+	dirCount   uint64
+}
+
+func NewMemFileSystem() *MemFileSystem {
+	return &MemFileSystem{
+		inodes: make(map[uint32]*Inode),
+		blocks: make(map[uint32][]byte),
+	}
+}
+
+func (mfs *MemFileSystem) Init(ctx context.Context, size uint64, blockSize uint32) error {
+	mfs.mu.Lock()
+	defer mfs.mu.Unlock()
+
+	if blockSize < 512 {
+		blockSize = BlockSize
+	}
+	if blockSize > 1024*1024 {
+		blockSize = 1024 * 1024
+	}
+
+	totalBlocks := uint32(size / uint64(blockSize))
+	if totalBlocks < 10 {
+		return fmt.Errorf("size too small: need at least %d bytes", 10*blockSize)
+	}
+
+	inodeCount := totalBlocks / 4
+	if inodeCount < 10 {
+		inodeCount = 10
+	}
+
+	mfs.superBlock = NewSuperBlock(blockSize, totalBlocks, inodeCount)
+	mfs.blockSize = blockSize
+	mfs.totalSize = size
+	mfs.nextInode = 1
+	mfs.nextBlock = 2
+
+	// Create root directory
+	rootInode := &Inode{
+		ID:           0,
+		Type:         FileTypeDirectory,
+		Perm:         0755,
+		OwnerID:      0,
+		Size:         0,
+		CreatedAt:    time.Now().UnixNano(),
+		ModifiedAt:   time.Now().UnixNano(),
+		BlockCount:   0,
+		DirectBlocks: [12]uint32{},
+		Name:         "/",
+	}
+	mfs.inodes[0] = rootInode
+	mfs.dirCount = 1
+
+	logger.Info("Filesystem initialized: size=%d blockSize=%d totalBlocks=%d", size, blockSize, totalBlocks)
+	return nil
+}
+
+func (mfs *MemFileSystem) Mount(ctx context.Context) error {
+	mfs.mu.Lock()
+	defer mfs.mu.Unlock()
+	mfs.mounted = true
+	logger.Info("Filesystem mounted")
+	return nil
+}
+
+func (mfs *MemFileSystem) Unmount() error {
+	mfs.mu.Lock()
+	defer mfs.mu.Unlock()
+	mfs.mounted = false
+	logger.Info("Filesystem unmounted")
+	return nil
+}
+
+func (mfs *MemFileSystem) resolvePath(path string) (*Inode, error) {
+	path = CleanPath(path)
+	if path == "/" {
+		if inode, ok := mfs.inodes[0]; ok {
+			return inode, nil
+		}
+		return nil, ErrNotExist
+	}
+
+	current := mfs.inodes[0]
+	if current == nil {
+		return nil, ErrNotExist
+	}
+
+	parts := strings.Split(strings.Trim(path, "/"), "/")
+	for _, part := range parts {
+		if part == "" {
+			continue
+		}
+		found := false
+		for _, blockID := range current.DirectBlocks {
+			if blockID == 0 {
+				continue
+			}
+			data, ok := mfs.blocks[blockID]
+			if !ok {
+				continue
+			}
+			offset := 0
+			for offset < len(data) {
+				if data[offset] == 0 {
+					break
+				}
+				de := DeserializeDirEntry(data[offset:])
+				if de.Name == part {
+					if inode, ok := mfs.inodes[de.InodeID]; ok {
+						current = inode
+						found = true
+						break
+					}
+				}
+				offset += de.DirEntrySize()
+			}
+			if found {
+				break
+			}
+		}
+		if !found {
+			return nil, ErrNotExist
+		}
+	}
+	return current, nil
+}
+
+func (mfs *MemFileSystem) Create(ctx context.Context, path string, ownerID uint32) (File, error) {
+	mfs.mu.Lock()
+	defer mfs.mu.Unlock()
+
+	path = CleanPath(path)
+	parentPath, name := SplitPath(path)
+
+	if !isValidName(name) {
+		return nil, ErrInvalidPath
+	}
+
+	parent, err := mfs.resolvePath(parentPath)
+	if err != nil {
+		return nil, err
+	}
+	if parent.Type != FileTypeDirectory {
+		return nil, ErrNotDir
+	}
+
+	_, err = mfs.resolvePath(path)
+	if err == nil {
+		return nil, ErrExist
+	}
+
+	if mfs.nextInode >= mfs.superBlock.InodeCount {
+		return nil, ErrNoSpace
+	}
+
+	blockID := mfs.nextBlock
+	mfs.nextBlock++
+	mfs.blocks[blockID] = make([]byte, mfs.blockSize)
+
+	inode := &Inode{
+		ID:           mfs.nextInode,
+		Type:         FileTypeRegular,
+		Perm:         0644,
+		OwnerID:      ownerID,
+		Size:         0,
+		CreatedAt:    time.Now().UnixNano(),
+		ModifiedAt:   time.Now().UnixNano(),
+		BlockCount:   1,
+		DirectBlocks: [12]uint32{},
+		Name:         name,
+	}
+	inode.DirectBlocks[0] = blockID
+	mfs.nextInode++
+	mfs.inodes[inode.ID] = inode
+	mfs.fileCount++
+
+	mfs.addDirEntry(parent, inode.ID, name, FileTypeRegular)
+
+	logger.Info("File created: path=%s inode=%d", path, inode.ID)
+	return &MemFile{
+		fs:     mfs,
+		inode:  inode,
+		offset: 0,
+	}, nil
+}
+
+func (mfs *MemFileSystem) Open(ctx context.Context, path string) (File, error) {
+	path = CleanPath(path)
+	inode, err := mfs.resolvePath(path)
+	if err != nil {
+		return nil, err
+	}
+	if inode.Type != FileTypeRegular {
+		return nil, ErrIsDir
+	}
+
+	return &MemFile{
+		fs:     mfs,
+		inode:  inode,
+		offset: 0,
+	}, nil
+}
+
+func (mfs *MemFileSystem) Delete(ctx context.Context, path string) error {
+	mfs.mu.Lock()
+	defer mfs.mu.Unlock()
+
+	path = CleanPath(path)
+	if path == "/" {
+		return fmt.Errorf("cannot delete root directory")
+	}
+
+	parentPath, name := SplitPath(path)
+	inode, err := mfs.resolvePath(path)
+	if err != nil {
+		return err
+	}
+
+	if inode.Type == FileTypeDirectory {
+		for _, blockID := range inode.DirectBlocks {
+			if blockID == 0 {
+				continue
+			}
+			data, ok := mfs.blocks[blockID]
+			if ok {
+				offset := 0
+				for offset < len(data) {
+					if data[offset] == 0 {
+						break
+					}
+					de := DeserializeDirEntry(data[offset:])
+					if de.Name != "" {
+						return ErrNotEmpty
+					}
+					offset += de.DirEntrySize()
+				}
+			}
+		}
+		mfs.dirCount--
+	} else {
+		mfs.fileCount--
+	}
+
+	delete(mfs.inodes, inode.ID)
+	for _, blockID := range inode.DirectBlocks {
+		if blockID != 0 {
+			delete(mfs.blocks, blockID)
+		}
+	}
+
+	parent, _ := mfs.resolvePath(parentPath)
+	mfs.removeDirEntry(parent, name)
+
+	logger.Info("File deleted: path=%s", path)
+	return nil
+}
+
+func (mfs *MemFileSystem) Rename(ctx context.Context, oldPath, newPath string) error {
+	mfs.mu.Lock()
+	defer mfs.mu.Unlock()
+
+	oldPath = CleanPath(oldPath)
+	newPath = CleanPath(newPath)
+
+	oldParentPath, oldName := SplitPath(oldPath)
+	newParentPath, newName := SplitPath(newPath)
+
+	inode, err := mfs.resolvePath(oldPath)
+	if err != nil {
+		return err
+	}
+
+	newParent, err := mfs.resolvePath(newParentPath)
+	if err != nil {
+		return err
+	}
+
+	_, err = mfs.resolvePath(newPath)
+	if err == nil {
+		return ErrExist
+	}
+
+	oldParent, _ := mfs.resolvePath(oldParentPath)
+	mfs.removeDirEntry(oldParent, oldName)
+
+	inode.Name = newName
+	mfs.addDirEntry(newParent, inode.ID, newName, inode.Type)
+
+	logger.Info("File renamed: %s -> %s", oldPath, newPath)
+	return nil
+}
+
+func (mfs *MemFileSystem) Mkdir(ctx context.Context, path string, ownerID uint32) error {
+	mfs.mu.Lock()
+	defer mfs.mu.Unlock()
+
+	path = CleanPath(path)
+	if path == "/" {
+		return ErrExist
+	}
+
+	parentPath, name := SplitPath(path)
+	if !isValidName(name) {
+		return ErrInvalidPath
+	}
+
+	parent, err := mfs.resolvePath(parentPath)
+	if err != nil {
+		return err
+	}
+	if parent.Type != FileTypeDirectory {
+		return ErrNotDir
+	}
+
+	_, err = mfs.resolvePath(path)
+	if err == nil {
+		return ErrExist
+	}
+
+	if mfs.nextInode >= mfs.superBlock.InodeCount {
+		return ErrNoSpace
+	}
+
+	blockID := mfs.nextBlock
+	mfs.nextBlock++
+	mfs.blocks[blockID] = make([]byte, mfs.blockSize)
+
+	inode := &Inode{
+		ID:           mfs.nextInode,
+		Type:         FileTypeDirectory,
+		Perm:         0755,
+		OwnerID:      ownerID,
+		Size:         0,
+		CreatedAt:    time.Now().UnixNano(),
+		ModifiedAt:   time.Now().UnixNano(),
+		BlockCount:   1,
+		DirectBlocks: [12]uint32{},
+		Name:         name,
+	}
+	inode.DirectBlocks[0] = blockID
+	mfs.nextInode++
+	mfs.inodes[inode.ID] = inode
+	mfs.dirCount++
+
+	mfs.addDirEntry(parent, inode.ID, name, FileTypeDirectory)
+
+	logger.Info("Directory created: path=%s", path)
+	return nil
+}
+
+func (mfs *MemFileSystem) ReadDir(ctx context.Context, path string) ([]FileInfo, error) {
+	path = CleanPath(path)
+	inode, err := mfs.resolvePath(path)
+	if err != nil {
+		return nil, err
+	}
+	if inode.Type != FileTypeDirectory {
+		return nil, ErrNotDir
+	}
+
+	var entries []FileInfo
+	for _, blockID := range inode.DirectBlocks {
+		if blockID == 0 {
+			continue
+		}
+		data, ok := mfs.blocks[blockID]
+		if !ok {
+			continue
+		}
+		offset := 0
+		for offset < len(data) {
+			if data[offset] == 0 {
+				break
+			}
+			de := DeserializeDirEntry(data[offset:])
+			if childInode, ok := mfs.inodes[de.InodeID]; ok {
+				entries = append(entries, FileInfo{
+					ID:         uint64(childInode.ID),
+					Name:       childInode.Name,
+					Type:       childInode.Type,
+					Size:       childInode.Size,
+					Perm:       os.FileMode(childInode.Perm),
+					CreatedAt:  time.Unix(0, childInode.CreatedAt),
+					ModifiedAt: time.Unix(0, childInode.ModifiedAt),
+					OwnerID:    childInode.OwnerID,
+				})
+			}
+			offset += de.DirEntrySize()
+		}
+	}
+
+	return entries, nil
+}
+
+func (mfs *MemFileSystem) Stat(ctx context.Context, path string) (FileInfo, error) {
+	path = CleanPath(path)
+	inode, err := mfs.resolvePath(path)
+	if err != nil {
+		return FileInfo{}, err
+	}
+
+	return FileInfo{
+		ID:         uint64(inode.ID),
+		Name:       inode.Name,
+		Type:       inode.Type,
+		Size:       inode.Size,
+		Perm:       os.FileMode(inode.Perm),
+		CreatedAt:  time.Unix(0, inode.CreatedAt),
+		ModifiedAt: time.Unix(0, inode.ModifiedAt),
+		OwnerID:    inode.OwnerID,
+	}, nil
+}
+
+func (mfs *MemFileSystem) Stats() FsStats {
+	mfs.mu.RLock()
+	defer mfs.mu.RUnlock()
+
+	usedSize := uint64(0)
+	for _, inode := range mfs.inodes {
+		usedSize += uint64(inode.Size)
+	}
+
+	return FsStats{
+		TotalSize: mfs.totalSize,
+		UsedSize:  usedSize,
+		FreeSize:  mfs.totalSize - usedSize,
+		FileCount: mfs.fileCount,
+		DirCount:  mfs.dirCount,
+		BlockSize: mfs.blockSize,
+	}
+}
+
+func (mfs *MemFileSystem) addDirEntry(parent *Inode, inodeID uint32, name string, ftype FileType) {
+	for i, blockID := range parent.DirectBlocks {
+		if blockID == 0 {
+			newBlockID := mfs.nextBlock
+			mfs.nextBlock++
+			mfs.blocks[newBlockID] = make([]byte, mfs.blockSize)
+			parent.DirectBlocks[i] = newBlockID
+			blockID = newBlockID
+		}
+		data := mfs.blocks[blockID]
+		offset := 0
+		for offset < len(data) {
+			if data[offset] == 0 {
+				de := &DirEntry{
+					InodeID:  inodeID,
+					NameLen:  uint16(len(name)),
+					Name:     name,
+					FileType: ftype,
+				}
+				entryData := de.Serialize()
+				copy(data[offset:], entryData)
+				parent.Size += int64(len(entryData))
+				parent.ModifiedAt = time.Now().UnixNano()
+				return
+			}
+			de := DeserializeDirEntry(data[offset:])
+			offset += de.DirEntrySize()
+		}
+	}
+}
+
+func (mfs *MemFileSystem) removeDirEntry(parent *Inode, name string) {
+	for _, blockID := range parent.DirectBlocks {
+		if blockID == 0 {
+			continue
+		}
+		data := mfs.blocks[blockID]
+		offset := 0
+		for offset < len(data) {
+			if data[offset] == 0 {
+				return
+			}
+			de := DeserializeDirEntry(data[offset:])
+			entrySize := de.DirEntrySize()
+			if de.Name == name {
+				nextOffset := offset + entrySize
+				if nextOffset < len(data) {
+					copy(data[offset:], data[nextOffset:])
+				}
+				// Clear the remaining space
+				clearStart := len(data) - entrySize
+				if clearStart > 0 {
+					for i := clearStart; i < len(data); i++ {
+						data[i] = 0
+					}
+				}
+				parent.Size -= int64(entrySize)
+				if parent.Size < 0 {
+					parent.Size = 0
+				}
+				parent.ModifiedAt = time.Now().UnixNano()
+				return
+			}
+			offset += entrySize
+		}
+	}
+}

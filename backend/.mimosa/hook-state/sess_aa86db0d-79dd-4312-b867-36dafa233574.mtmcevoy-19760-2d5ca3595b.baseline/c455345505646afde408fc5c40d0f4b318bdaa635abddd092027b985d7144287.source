@@ -1,0 +1,251 @@
+package fs
+
+import (
+	"encoding/binary"
+	"strings"
+	"time"
+)
+
+// Inode represents an index node in the memory filesystem
+type Inode struct {
+	ID           uint32      `json:"id"`
+	Type         FileType    `json:"type"`
+	Perm         uint16      `json:"perm"`
+	OwnerID      uint32      `json:"owner_id"`
+	Size         int64       `json:"size"`
+	CreatedAt    int64       `json:"created_at"`
+	ModifiedAt   int64       `json:"modified_at"`
+	BlockCount   uint32      `json:"block_count"`
+	DirectBlocks [12]uint32  `json:"direct_blocks"`
+	IndirectBlock uint32     `json:"indirect_block"`
+	Name         string      `json:"name"`
+}
+
+const (
+	InodeSize      = 128
+	BlockSize      = 4096
+	MaxDirectBlocks = 12
+	PointersPerBlock = BlockSize / 4 // 1024 pointers per block
+)
+
+// Serialize serializes an inode to bytes
+func (in *Inode) Serialize() []byte {
+	buf := make([]byte, InodeSize)
+	offset := 0
+
+	binary.LittleEndian.PutUint32(buf[offset:], in.ID)
+	offset += 4
+	buf[offset] = byte(in.Type)
+	offset += 1
+	binary.LittleEndian.PutUint16(buf[offset:], in.Perm)
+	offset += 2
+	binary.LittleEndian.PutUint32(buf[offset:], in.OwnerID)
+	offset += 4
+	binary.LittleEndian.PutUint64(buf[offset:], uint64(in.Size))
+	offset += 8
+	binary.LittleEndian.PutUint64(buf[offset:], uint64(in.CreatedAt))
+	offset += 8
+	binary.LittleEndian.PutUint64(buf[offset:], uint64(in.ModifiedAt))
+	offset += 8
+	binary.LittleEndian.PutUint32(buf[offset:], in.BlockCount)
+	offset += 4
+
+	for _, block := range in.DirectBlocks {
+		binary.LittleEndian.PutUint32(buf[offset:], block)
+		offset += 4
+	}
+
+	binary.LittleEndian.PutUint32(buf[offset:], in.IndirectBlock)
+	offset += 4
+
+	// Name at the end
+	nameBytes := []byte(in.Name)
+	copy(buf[offset:], nameBytes)
+	buf[offset+len(nameBytes)] = 0
+
+	return buf
+}
+
+// DeserializeInode parses inode from bytes
+func DeserializeInode(data []byte) *Inode {
+	in := &Inode{}
+	offset := 0
+
+	in.ID = binary.LittleEndian.Uint32(data[offset:])
+	offset += 4
+	in.Type = FileType(data[offset])
+	offset += 1
+	in.Perm = binary.LittleEndian.Uint16(data[offset:])
+	offset += 2
+	in.OwnerID = binary.LittleEndian.Uint32(data[offset:])
+	offset += 4
+	in.Size = int64(binary.LittleEndian.Uint64(data[offset:]))
+	offset += 8
+	in.CreatedAt = int64(binary.LittleEndian.Uint64(data[offset:]))
+	offset += 8
+	in.ModifiedAt = int64(binary.LittleEndian.Uint64(data[offset:]))
+	offset += 8
+	in.BlockCount = binary.LittleEndian.Uint32(data[offset:])
+	offset += 4
+
+	for i := 0; i < MaxDirectBlocks; i++ {
+		in.DirectBlocks[i] = binary.LittleEndian.Uint32(data[offset:])
+		offset += 4
+	}
+
+	in.IndirectBlock = binary.LittleEndian.Uint32(data[offset:])
+	offset += 4
+
+	// Read null-terminated name
+	nameEnd := offset
+	for nameEnd < len(data) && data[nameEnd] != 0 {
+		nameEnd++
+	}
+	in.Name = string(data[offset:nameEnd])
+
+	return in
+}
+
+// DirEntry represents a directory entry
+type DirEntry struct {
+	InodeID  uint32
+	NameLen  uint16
+	Name     string
+	FileType FileType
+}
+
+// DirEntrySize returns the serialized size of a directory entry
+func (de *DirEntry) DirEntrySize() int {
+	return 4 + 2 + len(de.Name) + 1
+}
+
+// Serialize serializes a directory entry
+func (de *DirEntry) Serialize() []byte {
+	buf := make([]byte, de.DirEntrySize())
+	offset := 0
+
+	binary.LittleEndian.PutUint32(buf[offset:], de.InodeID)
+	offset += 4
+	binary.LittleEndian.PutUint16(buf[offset:], uint16(len(de.Name)))
+	offset += 2
+	copy(buf[offset:], de.Name)
+	offset += len(de.Name)
+	buf[offset] = byte(de.FileType)
+
+	return buf
+}
+
+// DeserializeDirEntry parses a directory entry from bytes
+func DeserializeDirEntry(data []byte) *DirEntry {
+	de := &DirEntry{}
+	offset := 0
+
+	de.InodeID = binary.LittleEndian.Uint32(data[offset:])
+	offset += 4
+	de.NameLen = binary.LittleEndian.Uint16(data[offset:])
+	offset += 2
+	de.Name = string(data[offset : offset+int(de.NameLen)])
+	offset += int(de.NameLen)
+	de.FileType = FileType(data[offset])
+
+	return de
+}
+
+// SuperBlock is the first block of the filesystem
+type SuperBlock struct {
+	Magic       uint32
+	Version     uint32
+	BlockSize   uint32
+	TotalBlocks uint32
+	FreeBlocks  uint32
+	InodeCount  uint32
+	FreeInodes  uint32
+	RootInode   uint32
+	Checksum    uint32
+}
+
+const (
+	SuperBlockMagic = 0x4D454D46 // "MEMF"
+	SuperBlockSize  = 64
+)
+
+func NewSuperBlock(blockSize uint32, totalBlocks uint32, inodeCount uint32) *SuperBlock {
+	return &SuperBlock{
+		Magic:       SuperBlockMagic,
+		Version:     1,
+		BlockSize:   blockSize,
+		TotalBlocks: totalBlocks,
+		FreeBlocks:  totalBlocks - 1, // SB occupies 1 block
+		InodeCount:  inodeCount,
+		FreeInodes:  inodeCount - 1, // root inode
+		RootInode:   0,
+	}
+}
+
+func (sb *SuperBlock) Serialize() []byte {
+	buf := make([]byte, SuperBlockSize)
+	offset := 0
+
+	binary.LittleEndian.PutUint32(buf[offset:], sb.Magic)
+	offset += 4
+	binary.LittleEndian.PutUint32(buf[offset:], sb.Version)
+	offset += 4
+	binary.LittleEndian.PutUint32(buf[offset:], sb.BlockSize)
+	offset += 4
+	binary.LittleEndian.PutUint32(buf[offset:], sb.TotalBlocks)
+	offset += 4
+	binary.LittleEndian.PutUint32(buf[offset:], sb.FreeBlocks)
+	offset += 4
+	binary.LittleEndian.PutUint32(buf[offset:], sb.InodeCount)
+	offset += 4
+	binary.LittleEndian.PutUint32(buf[offset:], sb.FreeInodes)
+	offset += 4
+	binary.LittleEndian.PutUint32(buf[offset:], sb.RootInode)
+	offset += 4
+	binary.LittleEndian.PutUint32(buf[offset:], sb.Checksum)
+
+	return buf
+}
+
+func DeserializeSuperBlock(data []byte) *SuperBlock {
+	sb := &SuperBlock{}
+	offset := 0
+
+	sb.Magic = binary.LittleEndian.Uint32(data[offset:])
+	offset += 4
+	sb.Version = binary.LittleEndian.Uint32(data[offset:])
+	offset += 4
+	sb.BlockSize = binary.LittleEndian.Uint32(data[offset:])
+	offset += 4
+	sb.TotalBlocks = binary.LittleEndian.Uint32(data[offset:])
+	offset += 4
+	sb.FreeBlocks = binary.LittleEndian.Uint32(data[offset:])
+	offset += 4
+	sb.InodeCount = binary.LittleEndian.Uint32(data[offset:])
+	offset += 4
+	sb.FreeInodes = binary.LittleEndian.Uint32(data[offset:])
+	offset += 4
+	sb.RootInode = binary.LittleEndian.Uint32(data[offset:])
+	offset += 4
+	sb.Checksum = binary.LittleEndian.Uint32(data[offset:])
+
+	return sb
+}
+
+func (sb *SuperBlock) IsValid() bool {
+	return sb.Magic == SuperBlockMagic
+}
+
+// Helper function to check if filename is valid
+func isValidName(name string) bool {
+	if len(name) == 0 || len(name) > 255 {
+		return false
+	}
+	if strings.Contains(name, "/") || strings.Contains(name, "\x00") {
+		return false
+	}
+	if name == "." || name == ".." {
+		return false
+	}
+	return true
+}

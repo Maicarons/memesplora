@@ -1,0 +1,55 @@
+//go:build windows
+
+package device
+
+import (
+	"golang.org/x/sys/windows"
+	"os"
+	"strconv"
+)
+
+type RAMDetector struct{}
+
+func NewRAMDetector() *RAMDetector {
+	return &RAMDetector{}
+}
+
+func (d *RAMDetector) Detect() ([]Device, error) {
+	var mem windows.MemoryStatusEx
+	mem.Length = uint32(unsafe.Sizeof(mem))
+	err := windows.GlobalMemoryStatusEx(&mem)
+	if err != nil {
+		// Fallback
+		usableSize := uint64(1 * 1024 * 1024 * 1024) // 1GB default
+		if val := os.Getenv("MEMESPLORA_MEMORY_SIZE"); val != "" {
+			if s, err := strconv.ParseUint(val, 10, 64); err == nil {
+				usableSize = s
+			}
+		}
+		dev, err := NewRAMDevice("ram_0", usableSize)
+		return []Device{dev}, err
+	}
+
+	// Use half of available physical memory
+	usableSize := mem.AvailablePhys / 2
+	dev, err := NewRAMDevice("ram_0", usableSize)
+	if err != nil {
+		return nil, err
+	}
+	return []Device{dev}, nil
+}
+
+type GPUDetector struct{}
+
+func NewGPUDetector() *GPUDetector {
+	return &GPUDetector{}
+}
+
+func (d *GPUDetector) Detect() ([]Device, error) {
+	if os.Getenv("MEMESPLORA_ENABLE_GPU") == "" {
+		return nil, nil
+	}
+	return []Device{
+		NewVRAMDevice("gpu_0", 0, 24*1024*1024*1024, "NVIDIA GPU (simulated)"),
+	}, nil
+}

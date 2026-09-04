@@ -1,0 +1,68 @@
+package device
+
+import (
+	"context"
+	"errors"
+	"time"
+)
+
+var (
+	ErrDeviceNotAvailable = errors.New("device not available")
+	ErrDeviceFull         = errors.New("device is full")
+	ErrInvalidSize        = errors.New("invalid size")
+	ErrBlockNotFound      = errors.New("block not found")
+	ErrNotSupported       = errors.New("operation not supported on this platform")
+)
+
+type DeviceType int
+
+const (
+	DeviceRAM  DeviceType = iota
+	DeviceVRAM
+	DeviceSwap
+)
+
+func (dt DeviceType) String() string {
+	switch dt {
+	case DeviceRAM:
+		return "ram"
+	case DeviceVRAM:
+		return "vram"
+	case DeviceSwap:
+		return "swap"
+	default:
+		return "unknown"
+	}
+}
+
+type DeviceInfo struct {
+	ID        string     `json:"id"`
+	Name      string     `json:"name"`
+	Type      DeviceType `json:"device_type"`
+	TotalSize uint64     `json:"total_size"`
+	FreeSize  uint64     `json:"free_size"`
+	UsedSize  uint64     `json:"used_size"`
+	Healthy   bool       `json:"healthy"`
+	Model     string     `json:"model,omitempty"`
+}
+
+type Block struct {
+	ID        string    `json:"id"`
+	DeviceID  string    `json:"device_id"`
+	Offset    uint64    `json:"offset"`
+	Size      uint64    `json:"size"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
+type Device interface {
+	Info() DeviceInfo
+	Allocate(ctx context.Context, size uint64) (*Block, error)
+	Free(ctx context.Context, block *Block) error
+	Read(ctx context.Context, block *Block, offset uint64, buf []byte) (int, error)
+	Write(ctx context.Context, block *Block, offset uint64, buf []byte) (int, error)
+	Close() error
+}
+
+type Detector interface {
+	Detect() ([]Device, error)
+}

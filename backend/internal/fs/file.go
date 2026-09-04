@@ -1,0 +1,190 @@
+package fs
+
+import (
+	"io"
+	"os"
+	"time"
+)
+
+type MemFile struct {
+	fs     *MemFileSystem
+	inode  *Inode
+	offset int64
+	closed bool
+}
+
+func (f *MemFile) Read(p []byte) (int, error) {
+	if f.closed {
+		return 0, ErrReadOnly
+	}
+
+	f.fs.mu.RLock()
+	defer f.fs.mu.RUnlock()
+
+	if f.offset >= f.inode.Size {
+		return 0, io.EOF
+	}
+
+	blockIdx := int(f.offset) / int(f.fs.blockSize)
+	blockOff := int(f.offset) % int(f.fs.blockSize)
+	totalRead := 0
+	remaining := len(p)
+
+	if remaining > int(f.inode.Size-f.offset) {
+		remaining = int(f.inode.Size - f.offset)
+	}
+
+	for remaining > 0 && blockIdx < len(f.inode.DirectBlocks) {
+		blockID := f.inode.DirectBlocks[blockIdx]
+		if blockID == 0 {
+			break
+		}
+		data, ok := f.fs.blocks[blockID]
+		if !ok {
+			break
+		}
+
+		toRead := int(f.fs.blockSize) - blockOff
+		if toRead > remaining {
+			toRead = remaining
+		}
+		if toRead > len(data)-blockOff {
+			toRead = len(data) - blockOff
+		}
+		if toRead <= 0 {
+			break
+		}
+
+		copy(p[totalRead:], data[blockOff:blockOff+toRead])
+		totalRead += toRead
+		remaining -= toRead
+		blockIdx++
+		blockOff = 0
+		f.offset += int64(toRead)
+	}
+
+	if remaining > 0 {
+		return totalRead, io.EOF
+	}
+	return totalRead, nil
+}
+
+func (f *MemFile) Write(p []byte) (int, error) {
+	if f.closed {
+		return 0, ErrReadOnly
+	}
+
+	f.fs.mu.Lock()
+	defer f.fs.mu.Unlock()
+
+	blockIdx := int(f.offset) / int(f.fs.blockSize)
+	blockOff := int(f.offset) % int(f.fs.blockSize)
+	totalWritten := 0
+	remaining := len(p)
+
+	for remaining > 0 {
+		// Allocate new block if needed
+		if blockIdx >= len(f.inode.DirectBlocks) {
+			return totalWritten, io.ErrShortWrite
+		}
+		if f.inode.DirectBlocks[blockIdx] == 0 {
+			newBlockID := f.fs.nextBlock
+			f.fs.nextBlock++
+			f.fs.blocks[newBlockID] = make([]byte, f.fs.blockSize)
+			f.inode.DirectBlocks[blockIdx] = newBlockID
+		}
+
+		blockID := f.inode.DirectBlocks[blockIdx]
+		data := f.fs.blocks[blockID]
+
+		toWrite := int(f.fs.blockSize) - blockOff
+		if toWrite > remaining {
+			toWrite = remaining
+		}
+
+		copy(data[blockOff:blockOff+toWrite], p[totalWritten:totalWritten+toWrite])
+		totalWritten += toWrite
+		remaining -= toWrite
+		blockIdx++
+		blockOff = 0
+		f.offset += int64(toWrite)
+
+		if f.offset > f.inode.Size {
+			f.inode.Size = f.offset
+		}
+	}
+
+	f.inode.ModifiedAt = time.Now().UnixNano()
+	return totalWritten, nil
+}
+
+func (f *MemFile) Seek(offset int64, whence int) (int64, error) {
+	f.fs.mu.Lock()
+	defer f.fs.mu.Unlock()
+
+	var newOffset int64
+	switch whence {
+	case io.SeekStart:
+		newOffset = offset
+	case io.SeekCurrent:
+		newOffset = f.offset + offset
+	case io.SeekEnd:
+		newOffset = f.inode.Size + offset
+	default:
+		return 0, ErrInvalidPath
+	}
+
+	if newOffset < 0 {
+		return 0, ErrInvalidPath
+	}
+
+	f.offset = newOffset
+	return newOffset, nil
+}
+
+func (f *MemFile) Close() error {
+	f.closed = true
+	return nil
+}
+
+func (f *MemFile) Stat() (FileInfo, error) {
+	f.fs.mu.RLock()
+	defer f.fs.mu.RUnlock()
+
+	return FileInfo{
+		ID:         uint64(f.inode.ID),
+		Name:       f.inode.Name,
+		Type:       f.inode.Type,
+		Size:       f.inode.Size,
+		Perm:       os.FileMode(f.inode.Perm),
+		CreatedAt:  time.Unix(0, f.inode.CreatedAt),
+		ModifiedAt: time.Unix(0, f.inode.ModifiedAt),
+		OwnerID:    f.inode.OwnerID,
+	}, nil
+}
+
+func (f *MemFile) Sync() error {
+	return nil
+}
+
+func (f *MemFile) Truncate(size int64) error {
+	if f.closed {
+		return ErrReadOnly
+	}
+
+	f.fs.mu.Lock()
+	defer f.fs.mu.Unlock()
+
+	if size < 0 {
+		return ErrInvalidPath
+	}
+
+	f.inode.Size = size
+	f.inode.ModifiedAt = time.Now().UnixNano()
+
+	if f.offset > size {
+		f.offset = size
+	}
+
+	return nil
+}

@@ -1,0 +1,92 @@
+package api
+
+import (
+	"github.com/gin-gonic/gin"
+
+	"memesplora/backend/internal/api/handler"
+	"memesplora/backend/internal/api/middleware"
+	"memesplora/backend/internal/config"
+)
+
+func NewRouter(h *handler.Handler, auth *middleware.AuthMiddleware, cfg *config.Config) *gin.Engine {
+	gin.SetMode(gin.ReleaseMode)
+	r := gin.New()
+
+	// Global middleware
+	r.Use(middleware.CORSMiddleware())
+	r.Use(middleware.LoggerMiddleware())
+	r.Use(middleware.RateLimitMiddleware())
+	r.Use(gin.Recovery())
+
+	// API v3 routes
+	v3 := r.Group("/api/v3")
+	{
+		// Auth routes (no auth required)
+		auth := v3.Group("/admin")
+		{
+			auth.POST("/login", h.Login)
+		}
+
+		// User routes
+		user := v3.Group("/user")
+		user.Use(auth.RequireAuth())
+		{
+			user.GET("/session", h.GetSession)
+		}
+
+		// Device routes
+		device := v3.Group("/device")
+		device.Use(auth.RequireAuth())
+		{
+			device.GET("", h.ListDevices)
+			device.GET("/:id", h.GetDevice)
+			device.GET("/:id/health", h.DeviceHealth)
+		}
+
+		// Space routes
+		space := v3.Group("/space")
+		space.Use(auth.RequireAuth())
+		{
+			space.GET("", h.ListSpaces)
+			space.POST("", h.CreateSpace)
+			space.GET("/:id", h.GetSpace)
+			space.PATCH("/:id", h.UpdateSpace)
+			space.DELETE("/:id", h.DeleteSpace)
+			space.POST("/:id/resize", h.ResizeSpace)
+		}
+
+		// File routes
+		spaceID := v3.Group("/space/:id")
+		spaceID.Use(auth.RequireAuth())
+		{
+			spaceID.GET("/files", h.ListFiles)
+			spaceID.POST("/files", h.UploadFile)
+			spaceID.GET("/files/:fileId", h.DownloadFile)
+			spaceID.DELETE("/files/:fileId", h.DeleteFile)
+			spaceID.PUT("/files/:fileId", h.UpdateFile)
+			spaceID.POST("/files/:fileId/rename", h.RenameFile)
+			spaceID.POST("/files/:fileId/move", h.MoveFile)
+			spaceID.POST("/files/:fileId/copy", h.CopyFile)
+			spaceID.POST("/dirs", h.CreateDir)
+		}
+
+		// Share routes
+		share := v3.Group("/share")
+		share.Use(auth.RequireAuth())
+		{
+			share.POST("", h.CreateShare)
+			share.GET("/list", h.ListShares)
+			share.DELETE("/:id", h.DeleteShare)
+		}
+	}
+
+	// Public share route (no auth)
+	r.GET("/api/v3/share/:key/download", h.DownloadByShareKey)
+
+	// Health check
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{"status": "ok"})
+	})
+
+	return r
+}

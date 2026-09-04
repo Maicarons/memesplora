@@ -1,0 +1,21 @@
+server:
+  http_port: 5212
+  s3_port: 5213
+  webdav_port: 5214
+  host: "0.0.0.0"
+
+database:
+  driver: sqlite
+  dsn: "./data/memesplora.db"
+
+auth:
+  jwt_secret: "change-me-to-a-random-string"
+  token_expire: 24h
+
+storage:
+  default_block_size: 4096
+  max_space_size: 1TB
+  allow_vram: false
+
+log:
+  level: info
